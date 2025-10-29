@@ -39,7 +39,7 @@ export const PatientDetailsCard = ({ data }: { data: Patient }) => {
           <div>
             <p className="text-sm text-gray-500">Date of Birth</p>
             <p className="text-base font-medium text-muted-foreground">
-              {format(new Date(data?.date_of_birth), "MMM d, yyyy")}
+              {format(new Date(data?.date_of_birth), "d MMM, yyyy")}
             </p>
           </div>
         </div>
@@ -75,7 +75,7 @@ export const PatientDetailsCard = ({ data }: { data: Patient }) => {
           <div>
             <p className="text-sm text-gray-500">Physician</p>
             <p className="text-base font-medium text-muted-foreground">
-              Dr Codewave, MBBS, FCPS
+              Dr Jackson, MBBS, FCPS
             </p>
           </div>
         </div>
