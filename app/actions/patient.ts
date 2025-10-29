@@ -16,17 +16,43 @@ export async function updatePatient(data: any, pid: string) {
       };
     }
 
-    const patientData = validateData.data;
+    const { 
+      emergency_contact_name,
+      emergency_contact_number,
+      blood_group,
+      allergies,
+      medical_conditions,
+      medical_history,
+      insurance_provider,
+      insurance_number,
+      medical_consent,
+      privacy_consent,
+      service_consent,
+      img,
+      ...requiredFields
+    } = validateData.data;
 
     const client = await clerkClient();
     await client.users.updateUser(pid, {
-      firstName: patientData.first_name,
-      lastName: patientData.last_name,
+      firstName: requiredFields.first_name,
+      lastName: requiredFields.last_name,
     });
 
     await db.patient.update({
       data: {
-        ...patientData,
+        ...requiredFields,
+        ...(emergency_contact_name && { emergency_contact_name }),
+        ...(emergency_contact_number && { emergency_contact_number }),
+        ...(blood_group && { blood_group }),
+        ...(allergies && { allergies }),
+        ...(medical_conditions && { medical_conditions }),
+        ...(medical_history && { medical_history }),
+        ...(insurance_provider && { insurance_provider }),
+        ...(insurance_number && { insurance_number }),
+        ...(medical_consent !== undefined && { medical_consent }),
+        ...(privacy_consent !== undefined && { privacy_consent }),
+        ...(service_consent !== undefined && { service_consent }),
+        ...(img && { img }),
       },
       where: { id: pid },
     });
@@ -41,6 +67,7 @@ export async function updatePatient(data: any, pid: string) {
     return { success: false, error: true, msg: error?.message };
   }
 }
+
 export async function createNewPatient(data: any, pid: string) {
   try {
     const validateData = PatientFormSchema.safeParse(data);
@@ -53,24 +80,53 @@ export async function createNewPatient(data: any, pid: string) {
       };
     }
 
-    const patientData = validateData.data;
-    
+    const { 
+      emergency_contact_name,
+      emergency_contact_number,
+      blood_group,
+      allergies,
+      medical_conditions,
+      medical_history,
+      insurance_provider,
+      insurance_number,
+      medical_consent,
+      privacy_consent,
+      service_consent,
+      img,
+      ...requiredFields
+    } = validateData.data;
 
     const client = await clerkClient();
-        await client.users.updateUser(pid, {
-        firstName: patientData.first_name,
-        lastName: patientData.last_name,
-      });
-
-
-    await db.patient.update({
-      data: {
-        ...patientData,
-      },
-      where: { id: pid },
+    await client.users.updateUser(pid, {
+      firstName: requiredFields.first_name,
+      lastName: requiredFields.last_name,
     });
 
-    return { success: true, error: false, msg: "Patient information updated successfully" };
+    // ✅ Changed from update to create for new patients
+    await db.patient.create({
+      data: {
+        id: pid, // Use the Clerk user ID as the patient ID
+        ...requiredFields,
+        ...(emergency_contact_name && { emergency_contact_name }),
+        ...(emergency_contact_number && { emergency_contact_number }),
+        ...(blood_group && { blood_group }),
+        ...(allergies && { allergies }),
+        ...(medical_conditions && { medical_conditions }),
+        ...(medical_history && { medical_history }),
+        ...(insurance_provider && { insurance_provider }),
+        ...(insurance_number && { insurance_number }),
+        ...(medical_consent !== undefined && { medical_consent }),
+        ...(privacy_consent !== undefined && { privacy_consent }),
+        ...(service_consent !== undefined && { service_consent }),
+        ...(img && { img }),
+      },
+    });
+
+    return {
+      success: true,
+      error: false,
+      msg: "Patient registered successfully",
+    };
   } catch (error: any) {
     console.error(error);
     return { success: false, error: true, msg: error?.message };

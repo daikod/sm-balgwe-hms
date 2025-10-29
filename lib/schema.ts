@@ -1,10 +1,10 @@
-// ✅ FIX IN /lib/schema.ts
+// ✅ FIXED - Change date_of_birth to accept string or use coerce
 import { z } from "zod";
 
 export const PatientFormSchema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().min(1),
-  date_of_birth: z.date(), // ✅ match your form Date object
+  date_of_birth: z.coerce.date(), // ✅ Changed from z.date() to z.coerce.date()
   gender: z.enum(["MALE", "FEMALE"]),
   phone: z.string(),
   email: z.string().email(),
@@ -31,7 +31,7 @@ export const PatientFormSchema = z.object({
   img: z.string().optional(),
 });
 
-
+// Rest of your schemas remain the same...
 export const AppointmentSchema = z.object({
   doctor_id: z.string().min(1, "Select physician"),
   type: z.string().min(1, "Select type of appointment"),
@@ -141,8 +141,6 @@ export const PaymentSchema = z.object({
   discount: z.string(),
   total_amount: z.string(),
 });
-
-
 
 export const PatientBillSchema = z.object({
   bill_id: z.string(),

@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={` -webkit-font-smoothing: antialiased suppressHydrationWarning={true}`}>
         <ClerkProvider>
         {children}
         <Toaster richColors position="top-center" />
