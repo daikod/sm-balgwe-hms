@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TREO HMS",
+  title: "SM BALGWE HMS",
   description: "Built by Dr Philip Ikeme",
 };
 
@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={` -webkit-font-smoothing: antialiased suppressHydrationWarning={true}`}>
+      <body className={`--webkit-font-smoothing: antialiased suppressHydrationWarning={true}`}>
         <ClerkProvider>
         {children}
         <Toaster richColors position="top-center" />

@@ -19,14 +19,14 @@ export default async function Home() {
           <h1 className="text-4xl md:text-5xl font-bold text-center">
             Welcome to <br />
             <span className="text-blue-700 text-5xl md:text-6xl">
-              TREO Healthcare Management System
+              SM BALGWE Healthcare Management System
             </span>
           </h1>
         </div>
 
         <div className="text-center max-w-xl flex flex-col items-center justify-center">
           <p className="mb-8">
-            TREO HMS - A Healthcare Management System comprosing a full electronic health records system, that simplifies the process of patient care and management.
+            SM BALGWE HMS - A Healthcare Management System comprosing a full electronic health records system, that simplifies and enhances, the process of patient care and management.
           </p>
 
           <div className="flex gap-4">
@@ -59,8 +59,8 @@ export default async function Home() {
         </div>
       </div>
       <footer className="mt-8">
-        <p className="text-center text-sm">
-          &copy; 2025 TREO Hospital Management System. All rights reserved.
+        <p className="text-center text-purple-950 text-sm">
+          &copy; 2025 SM BALGWE Hospital Management System. All rights reserved.
         </p>
       </footer>
     </div>

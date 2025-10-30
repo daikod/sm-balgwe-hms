@@ -54,7 +54,7 @@ const AdminDashboard = async () => {
       className: "bg-emerald-600/15",
       iconClassName: "bg-emerald-600/25 text-emerald-600",
       note: "Total consultation",
-      link: "/manage-appointments",
+      link: "/manage-consultations",
     },
   ];
 

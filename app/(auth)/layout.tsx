@@ -16,11 +16,11 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
           className="w-full h-full object-cover"
         />
         <div className="absolute top-0 w-full h-full bg-opacity-40 z-10 flex flex-col items-center justify-center">
-          <h1 className="text-3xl 2xl:text-5xl font-bold text-white">
-            TREO HMS
+          <h1 className="text-4xl 2xl:text-5xl font-bold text-white">
+            SM BALGWE HMS
           </h1>
-          <p className="text-blue-500 text-base">
-            Welcome to Excellence in Care
+          <p className="text-blue-600 text-base">
+            Welcome to Excellence in Care.
           </p>
         </div>
       </div>
