@@ -14,6 +14,7 @@ import {
   UserRound,
   Users,
   UsersRound,
+  BarChart3, // ← Added for Analytics
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -138,6 +139,12 @@ export const Sidebar = async () => {
     {
       label: "System",
       links: [
+        {
+          name: "Analytics & Reports", // ← Added Analytics link
+          href: "/analytics",
+          access: ["admin", "doctor"],
+          icon: BarChart3,
+        },
         {
           name: "Notifications",
           href: "/notifications",
