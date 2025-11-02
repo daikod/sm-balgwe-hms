@@ -178,7 +178,7 @@ export const Sidebar = async () => {
             href={"/"}
             className="hidden lg:flex text-base 2xl:text-xl font-bold"
           >
-            TREO HMS
+           SM BALGWE HMS
           </Link>
         </div>
 
