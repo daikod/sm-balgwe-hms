@@ -4,11 +4,10 @@ import { z } from "zod";
 export const PatientFormSchema = z.object({
   first_name: z.string().min(1),
   last_name: z.string().min(1),
-  date_of_birth: z.coerce.date(), // ✅ Changed from z.date() to z.coerce.date()
-  gender: z.enum(["MALE", "FEMALE"]),
-  phone: z.string(),
   email: z.string().email(),
-  address: z.string(),
+  phone: z.string().min(5),
+  address: z.string().min(1),
+  gender: z.enum(["MALE", "FEMALE"]),
   marital_status: z.enum([
     "married",
     "single",
@@ -16,6 +15,8 @@ export const PatientFormSchema = z.object({
     "widowed",
     "separated",
   ]),
+  // 👇 THIS IS THE IMPORTANT FIX
+  date_of_birth: z.coerce.date(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_number: z.string().optional(),
   relation: z.enum(["mother", "father", "husband", "wife", "other"]),
@@ -23,13 +24,14 @@ export const PatientFormSchema = z.object({
   allergies: z.string().optional(),
   medical_conditions: z.string().optional(),
   medical_history: z.string().optional(),
-  insurance_provider: z.string().optional(),
   insurance_number: z.string().optional(),
-  medical_consent: z.boolean().optional(),
+  insurance_provider: z.string().optional(),
   privacy_consent: z.boolean().optional(),
   service_consent: z.boolean().optional(),
+  medical_consent: z.boolean().optional(),
   img: z.string().optional(),
 });
+
 
 // Rest of your schemas remain the same...
 export const AppointmentSchema = z.object({

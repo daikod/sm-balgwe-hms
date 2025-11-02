@@ -42,24 +42,28 @@ export const NewPatient = ({ data, type }: DataProps) => {
 
   const userId = user?.id;
   const form = useForm<z.infer<typeof PatientFormSchema>>({
-    resolver: zodResolver(PatientFormSchema),
-    defaultValues: {
-      ...userData,
-      address: "",
-      date_of_birth: new Date(),
-      gender: "MALE",
-      marital_status: "single",
-      emergency_contact_name: "",
-      emergency_contact_number: "",
-      relation: "mother",
-      blood_group: "",
-      allergies: "",
-      medical_conditions: "",
-      insurance_number: "",
-      insurance_provider: "",
-      medical_history: "",
-    },
-  });
+  resolver: zodResolver(PatientFormSchema),
+  defaultValues: {
+    ...userData,
+    address: "",
+    date_of_birth: new Date(), // ✅ valid default
+    gender: "MALE",
+    marital_status: "single",
+    emergency_contact_name: "",
+    emergency_contact_number: "",
+    relation: "mother",
+    blood_group: "",
+    allergies: "",
+    medical_conditions: "",
+    insurance_number: "",
+    insurance_provider: "",
+    medical_history: "",
+    privacy_consent: false,
+    service_consent: false,
+    medical_consent: false,
+  },
+});
+
 
   const onSubmit: SubmitHandler<z.infer<typeof PatientFormSchema>> = async (
     values
