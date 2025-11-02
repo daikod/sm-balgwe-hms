@@ -5,11 +5,20 @@ Key Notes (optional);
 2. Local postgresql database can be used instead of option 1
 3. Deploy using vercel
 
+   NB: Create free accounts with Prisma, clerk and neon for user authentication and database functionality
+
 ## Getting Started
 Prequisites;
+Create .env file using your own values, with the following;
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL="/sign-in"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL="/sign-up"
+DATABASE_URL=""
 
 Clone repo using git clone
-cd into 'repo'
+git clone https://github.com/daikod/sm-balgwe-hms.git
+cd sm-balgwe.git
 npm install 
 
 First, run the development server:
