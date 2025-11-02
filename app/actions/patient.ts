@@ -103,24 +103,37 @@ export async function createNewPatient(data: any, pid: string) {
     });
 
     // ✅ Changed from update to create for new patients
-    await db.patient.create({
-      data: {
-        id: pid, // Use the Clerk user ID as the patient ID
-        ...requiredFields,
-        ...(emergency_contact_name && { emergency_contact_name }),
-        ...(emergency_contact_number && { emergency_contact_number }),
-        ...(blood_group && { blood_group }),
-        ...(allergies && { allergies }),
-        ...(medical_conditions && { medical_conditions }),
-        ...(medical_history && { medical_history }),
-        ...(insurance_provider && { insurance_provider }),
-        ...(insurance_number && { insurance_number }),
-        ...(medical_consent !== undefined && { medical_consent }),
-        ...(privacy_consent !== undefined && { privacy_consent }),
-        ...(service_consent !== undefined && { service_consent }),
-        ...(img && { img }),
-      },
-    });
+await db.patient.create({
+  data: {
+    id: pid, // Clerk user ID as Patient ID
+    ...requiredFields,
+
+    // Required string fields (ensure non-null)
+    emergency_contact_name: emergency_contact_name ?? "",
+    emergency_contact_number: emergency_contact_number ?? "",
+    relation: requiredFields.relation ?? "",
+    marital_status: requiredFields.marital_status ?? "",
+    address: requiredFields.address ?? "",
+    phone: requiredFields.phone ?? "",
+    email: requiredFields.email ?? "",
+
+    // Optional string fields
+    ...(blood_group && { blood_group }),
+    ...(allergies && { allergies }),
+    ...(medical_conditions && { medical_conditions }),
+    ...(medical_history && { medical_history }),
+    ...(insurance_provider && { insurance_provider }),
+    ...(insurance_number && { insurance_number }),
+    ...(img && { img }),
+
+    // Required booleans (ensure non-null)
+    privacy_consent: privacy_consent ?? false,
+    service_consent: service_consent ?? false,
+    medical_consent: medical_consent ?? false,
+  },
+});
+
+
 
     return {
       success: true,

@@ -106,7 +106,7 @@ export const Sidebar = async () => {
         },
         {
           name: "Administer Medications",
-          href: "/nurse/administer-medications",
+          href: "/doctor/administer-medications",
           access: ["admin", "doctor", "nurse"],
           icon: Pill,
         },
@@ -124,7 +124,7 @@ export const Sidebar = async () => {
         },
         {
           name: "Prescription",
-          href: "#",
+          href: "/patient/prescriptions",
           access: ["patient"],
           icon: Pill,
         },
