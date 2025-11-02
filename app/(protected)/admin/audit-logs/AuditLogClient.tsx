@@ -437,7 +437,7 @@ export default function AuditLogClient() {
       {/* Footer */}
       <div className="mt-8 text-center text-sm text-gray-500">
         <p>Showing {filteredLogs.length} of {auditLogs.length} audit logs</p>
-        <p className="mt-1">© 2025 TREO Hospital Management System. All rights reserved.</p>
+        <p className="mt-1">© 2025 SM BALGWE Hospital Management System. All rights reserved.</p>
       </div>
     </div>
   );
