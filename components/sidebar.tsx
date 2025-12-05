@@ -168,7 +168,7 @@ export const Sidebar = async () => {
   ];
 
   return (
-    <div className="w-full p-4 flex flex-col justify-between gap-4 bg-white overflow-y-scroll min-h-full">
+    <div className="w-full p-4 flex flex-col justify-between gap-4 bg-teal-50 overflow-y-scroll min-h-full">
       <div className="">
         <div className="flex items-center justify-center lg:justify-start gap-2">
           <div className="p-1.5 rounded-md bg-blue-600 text-white">

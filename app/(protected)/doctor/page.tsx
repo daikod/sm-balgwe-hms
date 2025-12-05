@@ -68,9 +68,9 @@ const DoctorDashboard = async () => {
     <div className="rounded-xl py-6 px-3 flex flex-col xl:flex-row gap-6">
       {/* LEFT */}
       <div className="w-full xl:w-[69%]">
-        <div className="bg-white rounded-xl p-4 mb-8">
+        <div className="bg-gray-200 rounded-xl p-4 mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-lg xl:text-2xl font-semibold">
+            <h1 className="text-lg xl:text-2xl font-bold">
               Welcome, Dr. {user?.firstName}
             </h1>
             <Button size="sm" variant="outline" asChild>
