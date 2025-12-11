@@ -1,3 +1,6 @@
+
+
+"use client";
 import { AvailableDoctors } from "@/components/available-doctor";
 import { AppointmentChart } from "@/components/charts/appointment-chart";
 import { StatSummary } from "@/components/charts/stat-summary";
@@ -101,8 +104,6 @@ const AdminDashboard = async () => {
         <div className="w-full h-[450px]">
           <StatSummary data={appointmentCounts} total={totalAppointments!} />
         </div>
-
-        <AvailableDoctors data={availableDoctors as any} />
       </div>
     </div>
   );

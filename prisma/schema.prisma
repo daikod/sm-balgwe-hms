@@ -39,6 +39,7 @@ enum AppointmentStatus {
   SCHEDULED
   CANCELLED
   COMPLETED
+  IN_PROGRESS
 }
 
 enum PaymentMethod {
@@ -79,7 +80,7 @@ model Patient {
   img                      String?
   colorCode                String?
 
-  appointments              Appointment[]
+  appointments              Appointment[]       @relation("PatientAppointments")  // Added relation name
   medical                   MedicalRecords[]
   payments                  Payment[]
   ratings                   Rating[]
@@ -106,7 +107,7 @@ model Doctor {
 
   type          JOBTYPE        @default(FULL)
   working_days  WorkingDays[]
-  appointments  Appointment[]
+  appointments  Appointment[]  @relation("DoctorAppointments")  // Added relation name
   ratings       Rating[]
   diagnosis     Diagnosis[]
   prescriptions Prescription[]
@@ -148,16 +149,19 @@ model Staff {
 
 model Appointment {
   id               Int               @id @default(autoincrement())
+  roomID           String            @default("")  // Add default
   patient_id       String
   doctor_id        String
   appointment_date DateTime
+  scheduledAT      DateTime          @default(now())  // Add default
   time             String
   status           AppointmentStatus @default(PENDING)
+  duration         Int               @default(30)  // Add default (30 minutes)
   type             String
   note             String?
 
-  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
-  doctor  Doctor  @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  patient       Patient             @relation("PatientAppointments", fields: [patient_id], references: [id], onDelete: Cascade)
+  doctor        Doctor              @relation("DoctorAppointments", fields: [doctor_id], references: [id], onDelete: Cascade)
 
   bills      Payment[]
   medical    MedicalRecords[]

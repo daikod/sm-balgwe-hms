@@ -1,3 +1,4 @@
+import AppointmentCard from "@/components/AppointmentCard";
 import { AvailableDoctors } from "@/components/available-doctor";
 import { AppointmentChart } from "@/components/charts/appointment-chart";
 import { StatSummary } from "@/components/charts/stat-summary";
@@ -102,6 +103,7 @@ const DoctorDashboard = async () => {
           <RecentAppointments data={last5Records!} />
         </div>
       </div>
+            
 
       {/* RIGHT */}
       <div className="w-full xl:w-[30%]">
@@ -111,6 +113,19 @@ const DoctorDashboard = async () => {
 
         <AvailableDoctors data={availableDoctors as any} />
       </div>
+      <div>
+        <AppointmentCard appointment={{
+          id: 0,
+          roomID: "",
+          appointment_date: new Date(),
+          time: "",
+          status: "",
+          duration: 0,
+          type: "",
+          patient: undefined,
+          doctor: undefined
+        }} userRole={"DOCTOR"} />
+        </div>
     </div>
   );
 };
