@@ -1,4 +1,3 @@
-// ✅ FIXED - Change date_of_birth to accept string or use coerce
 import { z } from "zod";
 
 export const PatientFormSchema = z.object({
@@ -15,7 +14,6 @@ export const PatientFormSchema = z.object({
     "widowed",
     "separated",
   ]),
-  // 👇 THIS IS THE IMPORTANT FIX
   date_of_birth: z.coerce.date(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_number: z.string().optional(),
@@ -32,14 +30,14 @@ export const PatientFormSchema = z.object({
   img: z.string().optional(),
 });
 
-
-// Rest of your schemas remain the same...
+// ✅ UPDATED - Added appointmentMode field
 export const AppointmentSchema = z.object({
   doctor_id: z.string().min(1, "Select physician"),
   type: z.string().min(1, "Select type of appointment"),
   appointment_date: z.string().min(1, "Select appointment date"),
   time: z.string().min(1, "Select appointment time"),
   note: z.string().optional(),
+  appointmentMode: z.enum(["VIDEO_CALL", "IN_PERSON"]).optional(), // ✅ NEW FIELD
 });
 
 export const DoctorSchema = z.object({
@@ -79,6 +77,7 @@ export const workingDaySchema = z.object({
   start_time: z.string(),
   close_time: z.string(),
 });
+
 export const WorkingDaysSchema = z.array(workingDaySchema).optional();
 
 export const StaffSchema = z.object({

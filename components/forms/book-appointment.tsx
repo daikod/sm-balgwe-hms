@@ -15,7 +15,7 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import { Button } from "../ui/button";
-import { UserPen } from "lucide-react";
+import { UserPen, Video, MapPin } from "lucide-react";
 import { z } from "zod";
 import {
   Form,
@@ -46,6 +46,21 @@ const TYPES = [
   { label: "ANT", value: "ANT" },
 ];
 
+const APPOINTMENT_MODES = [
+  { 
+    value: "VIDEO_CALL", 
+    label: "Video Call", 
+    icon: Video,
+    description: "Online consultation"
+  },
+  { 
+    value: "IN_PERSON", 
+    label: "In-Person", 
+    icon: MapPin,
+    description: "Visit clinic"
+  },
+];
+
 export const BookAppointment = ({
   data,
   doctors,
@@ -55,6 +70,7 @@ export const BookAppointment = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appointmentMode, setAppointmentMode] = useState<"VIDEO_CALL" | "IN_PERSON">("VIDEO_CALL");
   const router = useRouter();
   const [physicians, setPhysicians] = useState<Doctor[] | undefined>(doctors);
 
@@ -78,12 +94,17 @@ export const BookAppointment = ({
   ) => {
     try {
       setIsSubmitting(true);
-      const newData = { ...values, patient_id: data?.id! };
+      const newData = { 
+        ...values, 
+        patient_id: data?.id!,
+        appointmentMode // Include the selected mode
+      };
 
       const res = await createNewAppointment(newData);
 
       if (res.success) {
         form.reset({});
+        setAppointmentMode("VIDEO_CALL"); // Reset to default
         router.refresh();
         toast.success("Appointment created successfully");
       }
@@ -100,7 +121,7 @@ export const BookAppointment = ({
       <SheetTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full flex items-center gap-2 justify-start text-sm font-light bg-blue-600 text-white"
+          className="w-full flex items-center gap-2 justify-start text-sm font-light bg-blue-600 text-white hover:bg-blue-700"
         >
           <UserPen size={16} /> Book Appointment
         </Button>
@@ -120,8 +141,9 @@ export const BookAppointment = ({
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8 mt-5 2xl:mt-10"
+                className="space-y-6 mt-5 2xl:mt-10"
               >
+                {/* Patient Info Card */}
                 <div className="w-full rounded-md border border-input bg-background px-3 py-1 flex items-center gap-4">
                   <ProfileImage
                     url={data?.img!}
@@ -138,6 +160,60 @@ export const BookAppointment = ({
                   </div>
                 </div>
 
+                {/* Appointment Mode Selection */}
+                <div className="space-y-2">
+                  <FormLabel>Appointment Mode</FormLabel>
+                  <div className="grid grid-cols-2 gap-3">
+                    {APPOINTMENT_MODES.map((mode) => {
+                      const Icon = mode.icon;
+                      const isSelected = appointmentMode === mode.value;
+                      
+                      return (
+                        <button
+                          key={mode.value}
+                          type="button"
+                          onClick={() => setAppointmentMode(mode.value as "VIDEO_CALL" | "IN_PERSON")}
+                          disabled={isSubmitting}
+                          className={`p-4 rounded-lg border-2 transition-all ${
+                            isSelected
+                              ? mode.value === "VIDEO_CALL"
+                                ? "border-blue-600 bg-blue-50"
+                                : "border-green-600 bg-green-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          } ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          <Icon className={`w-6 h-6 mx-auto mb-2 ${
+                            isSelected
+                              ? mode.value === "VIDEO_CALL"
+                                ? "text-blue-600"
+                                : "text-green-600"
+                              : "text-gray-400"
+                          }`} />
+                          <p className={`font-medium text-sm ${
+                            isSelected
+                              ? mode.value === "VIDEO_CALL"
+                                ? "text-blue-600"
+                                : "text-green-600"
+                              : "text-gray-700"
+                          }`}>
+                            {mode.label}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {mode.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {appointmentMode === "VIDEO_CALL" && (
+                    <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      A video call link will be generated for this appointment
+                    </p>
+                  )}
+                </div>
+
+                {/* Appointment Type */}
                 <CustomInput
                   type="select"
                   selectList={TYPES}
@@ -147,6 +223,7 @@ export const BookAppointment = ({
                   placeholder="Select a appointment type"
                 />
 
+                {/* Physician Selection */}
                 <FormField
                   control={form.control}
                   name="doctor_id"
@@ -191,6 +268,7 @@ export const BookAppointment = ({
                   )}
                 />
 
+                {/* Date and Time */}
                 <div className="flex items-center gap-2">
                   <CustomInput
                     type="input"
@@ -210,6 +288,7 @@ export const BookAppointment = ({
                   />
                 </div>
 
+                {/* Additional Notes */}
                 <CustomInput
                   type="textarea"
                   control={form.control}
@@ -218,12 +297,13 @@ export const BookAppointment = ({
                   label="Additional Note"
                 />
 
+                {/* Submit Button */}
                 <Button
                   disabled={isSubmitting}
                   type="submit"
-                  className="bg-blue-600 w-full"
+                  className="bg-blue-600 w-full hover:bg-blue-700"
                 >
-                  Submit
+                  {isSubmitting ? "Booking..." : "Book Appointment"}
                 </Button>
               </form>
             </Form>

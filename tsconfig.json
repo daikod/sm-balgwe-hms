@@ -29,7 +29,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "app/page.tsx.old",
-    "prisma/seed.ts.backup"
+    "prisma/seed.ts.backup",
+    "app/globals.css" 
   ],
   "exclude": ["node_modules"]
 }
