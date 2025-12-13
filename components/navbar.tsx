@@ -9,8 +9,10 @@ export const Navbar = () => {
   const user = useAuth();
   const pathname = usePathname();
   const [path, setPath] = useState("Overview"); // Default value for SSR
+  const [mounted, setMounted] = useState(false); // Add mounted state
 
   useEffect(() => {
+    setMounted(true); // Set mounted after client hydration
     // Only run on client side after hydration
     if (pathname) {
       const splitRoute = pathname.split("/");

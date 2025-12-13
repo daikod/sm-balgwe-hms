@@ -47,55 +47,42 @@ export async function createNewAppointment(data: any) {
       },
     });
 
-    // ✅ NEW: Create notifications for both parties
-    await Promise.all([
-      // Notify patient
-      db.notification.create({
-        data: {
-          userId: data.patient_id,
-          userRole: "PATIENT",
-          title: "Appointment Scheduled",
-          message: `Your ${
-            appointmentMode === "VIDEO_CALL" ? "video" : "in-person"
-          } appointment with Dr. ${appointment.doctor.name} is scheduled for ${validated.appointment_date} at ${validated.time}`,
-          type: "APPOINTMENT",
-          category: "BOOKING",
-          relatedId: appointment.id.toString(),
-          relatedType: "APPOINTMENT",
-          actionUrl:
-            appointmentMode === "VIDEO_CALL"
-              ? `/meeting/${roomID}`
-              : `/appointments/${appointment.id}`,
-          actionLabel:
-            appointmentMode === "VIDEO_CALL" ? "Join Video Call" : "View Details",
-          priority: "high",
-        },
-      }),
-      // Notify doctor
-      db.notification.create({
-        data: {
-          userId: validated.doctor_id,
-          userRole: "DOCTOR",
-          title: "New Appointment",
-          message: `New ${
-            appointmentMode === "VIDEO_CALL" ? "video" : "in-person"
-          } appointment with ${appointment.patient.first_name} ${
-            appointment.patient.last_name
-          } scheduled for ${validated.appointment_date} at ${validated.time}`,
-          type: "APPOINTMENT",
-          category: "BOOKING",
-          relatedId: appointment.id.toString(),
-          relatedType: "APPOINTMENT",
-          actionUrl:
-            appointmentMode === "VIDEO_CALL"
-              ? `/meeting/${roomID}`
-              : `/appointments/${appointment.id}`,
-          actionLabel:
-            appointmentMode === "VIDEO_CALL" ? "Join Video Call" : "View Details",
-          priority: "high",
-        },
-      }),
-    ]);
+    // ✅ FIXED: Check if patient exists before creating notification
+    try {
+      const patientExists = await db.patient.findUnique({
+        where: { id: data.patient_id },
+        select: { id: true }
+      });
+
+      if (patientExists) {
+        await db.notification.create({
+          data: {
+            userId: data.patient_id,
+            userRole: "PATIENT",
+            title: "Appointment Scheduled",
+            message: `Your ${
+              appointmentMode === "VIDEO_CALL" ? "video" : "in-person"
+            } appointment with Dr. ${appointment.doctor.name} is scheduled for ${validated.appointment_date} at ${validated.time}`,
+            type: "APPOINTMENT",
+            category: "BOOKING",
+            relatedId: appointment.id.toString(),
+            relatedType: "APPOINTMENT",
+            actionUrl:
+              appointmentMode === "VIDEO_CALL"
+                ? `/meeting/${roomID}`
+                : `/appointments/${appointment.id}`,
+            actionLabel:
+              appointmentMode === "VIDEO_CALL" ? "Join Video Call" : "View Details",
+            priority: "high",
+          },
+        });
+      } else {
+        console.log("Patient not found, skipping notification");
+      }
+    } catch (notificationError) {
+      // Log but don't fail the appointment creation
+      console.log("Notification creation failed:", notificationError);
+    }
 
     // ✅ NEW: Revalidate paths to refresh appointment lists
     revalidatePath("/patient/appointments");
