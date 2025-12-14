@@ -1,6 +1,7 @@
 import db from "@/lib/db";
 import { Prisma } from "@prisma/client";
 
+// Fetch appointment by ID
 export async function getAppointmentById(id: number) {
   try {
     if (!id) {
@@ -55,45 +56,32 @@ interface AllAppointmentsProps {
   id?: string;
 }
 
+// Build query for search and ID filtering
 const buildQuery = (id?: string, search?: string) => {
-  // Base conditions for search if it exists
-  const searchConditions: Prisma.AppointmentWhereInput = search
+  // Base conditions for search
+  const searchConditions = search
     ? {
         OR: [
-          {
-            patient: {
-              first_name: { contains: search, mode: "insensitive" },
-            },
-          },
-          {
-            patient: {
-              last_name: { contains: search, mode: "insensitive" },
-            },
-          },
-          {
-            doctor: {
-              name: { contains: search, mode: "insensitive" },
-            },
-          },
+          { patient: { first_name: { contains: search, mode: "insensitive" } } },
+          { patient: { last_name: { contains: search, mode: "insensitive" } } },
+          { doctor: { name: { contains: search, mode: "insensitive" } } },
         ],
       }
     : {};
 
-  // ID filtering conditions if ID exists
-  const idConditions: Prisma.AppointmentWhereInput = id
+  // ID filtering conditions
+  const idConditions = id
     ? {
         OR: [{ patient_id: id }, { doctor_id: id }],
       }
     : {};
 
   // Combine both conditions with AND if both exist
-  const combinedQuery: Prisma.AppointmentWhereInput =
+  const combinedQuery =
     id || search
       ? {
           AND: [
-            ...(Object.keys(searchConditions).length > 0
-              ? [searchConditions]
-              : []),
+            ...(Object.keys(searchConditions).length > 0 ? [searchConditions] : []),
             ...(Object.keys(idConditions).length > 0 ? [idConditions] : []),
           ],
         }
@@ -102,6 +90,7 @@ const buildQuery = (id?: string, search?: string) => {
   return combinedQuery;
 };
 
+// Fetch patient appointments with pagination and optional search
 export async function getPatientAppointments({
   page,
   limit,
@@ -111,8 +100,7 @@ export async function getPatientAppointments({
   try {
     const PAGE_NUMBER = Number(page) <= 0 ? 1 : Number(page);
     const LIMIT = Number(limit) || 10;
-
-    const SKIP = (PAGE_NUMBER - 1) * LIMIT; //0 -9
+    const SKIP = (PAGE_NUMBER - 1) * LIMIT;
 
     const [data, totalRecord] = await Promise.all([
       db.appointment.findMany({
@@ -181,6 +169,7 @@ export async function getPatientAppointments({
   }
 }
 
+// Fetch appointment with medical records
 export async function getAppointmentWithMedicalRecordsById(id: number) {
   try {
     if (!id) {

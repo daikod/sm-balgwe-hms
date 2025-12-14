@@ -69,7 +69,7 @@ export async function getDoctorDashboardStats() {
       ]);
 
     const { appointmentCounts, monthlyData } = await processAppointments(
-      appointments
+      appointments as any
     );
 
     const last5Records = appointments.slice(0, 5);
@@ -145,7 +145,7 @@ export async function getRatingById(id: string) {
     });
 
     const totalRatings = data?.length;
-    const sumRatings = data?.reduce((sum, el) => sum + el.rating, 0);
+    const sumRatings = data?.reduce((sum: any, el: any) => sum + el.rating, 0);
 
     const averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
     const formattedRatings = (Math.round(averageRating * 10) / 10).toFixed(1);

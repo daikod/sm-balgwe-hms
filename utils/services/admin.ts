@@ -53,7 +53,7 @@ export async function getAdminDashboardStats() {
       ]);
 
     const { appointmentCounts, monthlyData } = await processAppointments(
-      appointments
+      appointments as any
     );
 
     const last10Records = appointments.slice(0, 5);

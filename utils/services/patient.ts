@@ -128,7 +128,7 @@ export async function getPatientDashboardStatistics(id: string) {
     });
 
     const { appointmentCounts, monthlyData } = await processAppointments(
-      appointments
+      appointments as any
     );
     const last5Records = appointments.slice(0, 5);
 

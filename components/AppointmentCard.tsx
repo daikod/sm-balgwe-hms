@@ -3,31 +3,14 @@
 import { Video, Calendar, Clock, User } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import type { Appointment } from "@/types/appointment";
 
 interface AppointmentCardProps {
-  appointment: {
-    id: number
-    roomID: string
-    appointment_date: Date
-    time: string
-    status: string
-    duration: number
-    type: string
-    patient?: {
-      id: string
-      first_name: string
-      last_name: string
-      img?: string | null
-    }
-    doctor?: {
-      id: string
-      name: string
-      specialization: string
-      img?: string | null
-    }
+    appointment: Appointment;
+    userRole: "PATIENT" | "DOCTOR" | "ADMIN";
   }
-  userRole: 'DOCTOR' | 'PATIENT' | 'ADMIN'
-}
+  
+
 
 export default function AppointmentCard({ appointment, userRole }: AppointmentCardProps) {
   const canJoinMeeting = appointment.status === 'SCHEDULED' || appointment.status === 'IN_PROGRESS'

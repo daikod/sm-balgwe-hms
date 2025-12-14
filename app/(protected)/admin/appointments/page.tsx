@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import db from '@/lib/db'
 import AppointmentCard from '@/components/AppointmentCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Appointment } from '@/types/appointment'
 
 export default async function AdminAppointmentsPage() {
   const { userId } = await auth()
@@ -67,7 +68,7 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {scheduledAppointments.map((appointment) => (
+              {scheduledAppointments.map((appointment: Appointment) => (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
@@ -85,7 +86,7 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {inProgressAppointments.map((appointment) => (
+              {inProgressAppointments.map((appointment: Appointment) => (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
@@ -103,7 +104,7 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {completedAppointments.map((appointment) => (
+              {completedAppointments.map((appointment: Appointment)=> (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}

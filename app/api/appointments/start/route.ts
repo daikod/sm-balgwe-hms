@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       where: { id: appointmentId },
       data: { 
         status: 'IN_PROGRESS',
-        updatedAt: new Date(),
+        updated_at: new Date(),
       },
     })
 

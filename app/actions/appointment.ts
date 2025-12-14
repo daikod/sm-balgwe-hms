@@ -4,7 +4,6 @@ import { VitalSignsFormData } from "@/components/dialogs/add-vital-signs";
 import db from "@/lib/db";
 import { AppointmentSchema, VitalSignsSchema } from "@/lib/schema";
 import { auth } from "@clerk/nextjs/server";
-import { AppointmentStatus } from "@prisma/client";
 import { generateRoomId } from "@/lib/utils/generateRoomId";
 import { revalidatePath } from "next/cache";
 
@@ -102,7 +101,7 @@ export async function createNewAppointment(data: any) {
 
 export async function appointmentAction(
   id: string | number,
-  status: AppointmentStatus,
+  status: string,
   reason: string
 ) {
   try {

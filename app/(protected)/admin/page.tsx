@@ -1,6 +1,6 @@
+// app/(protected)/admin/page.tsx
+// ❌ REMOVE "use client"
 
-
-"use client";
 import { AvailableDoctors } from "@/components/available-doctor";
 import { AppointmentChart } from "@/components/charts/appointment-chart";
 import { StatSummary } from "@/components/charts/stat-summary";
@@ -73,7 +73,7 @@ const AdminDashboard = async () => {
             </Button>
           </div>
 
-          <div className="w-full  flex flex-wrap gap-5">
+          <div className="w-full flex flex-wrap gap-5">
             {cardData?.map((el, index) => (
               <StatCard
                 key={index}
@@ -99,7 +99,6 @@ const AdminDashboard = async () => {
       </div>
 
       {/* RIGHT */}
-
       <div className="w-full xl:w-[30%]">
         <div className="w-full h-[450px]">
           <StatSummary data={appointmentCounts} total={totalAppointments!} />
