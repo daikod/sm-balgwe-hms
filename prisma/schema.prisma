@@ -1,10 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")  
 }
 
 // ========================= ENUMS =========================
@@ -32,6 +33,11 @@ enum JOBTYPE {
 enum Gender {
   MALE
   FEMALE
+}
+
+enum AppointmentType {
+  VIDEO
+  PHYSICAL
 }
 
 enum AppointmentStatus {
@@ -96,6 +102,7 @@ model Doctor {
   id                  String  @id
   email               String  @unique
   name                String
+  gender              String? // optional
   specialization      String
   license_number      String
   phone               String
@@ -149,26 +156,29 @@ model Staff {
 
 model Appointment {
   id               Int               @id @default(autoincrement())
-  roomID           String            @default("")  // Add default
+  roomID           String            @default("")
   patient_id       String
   doctor_id        String
   appointment_date DateTime
-  scheduledAT      DateTime          @default(now())  // Add default
+  scheduledAT      DateTime          @default(now())
   time             String
   status           AppointmentStatus @default(PENDING)
-  duration         Int               @default(30)  // Add default (30 minutes)
-  type             String
-  note             String?
+  duration         Int               @default(30)
 
-  patient       Patient             @relation("PatientAppointments", fields: [patient_id], references: [id], onDelete: Cascade)
-  doctor        Doctor              @relation("DoctorAppointments", fields: [doctor_id], references: [id], onDelete: Cascade)
+  type             AppointmentType   // ✅ ENUM
+  note             String?
+  reason           String?
+
+  patient       Patient @relation("PatientAppointments", fields: [patient_id], references: [id], onDelete: Cascade)
+  doctor        Doctor  @relation("DoctorAppointments", fields: [doctor_id], references: [id], onDelete: Cascade)
 
   bills      Payment[]
   medical    MedicalRecords[]
-  reason     String?
-  created_at DateTime         @default(now())
-  updated_at DateTime         @updatedAt
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
+
 
 model Payment {
   id             Int      @id @default(autoincrement())
@@ -183,7 +193,7 @@ model Payment {
 
   payment_method PaymentMethod @default(CASH)
   status         PaymentStatus @default(UNPAID)
-  receipt_number Int           @default(autoincrement())
+  receipt_number Int           
 
   appointment Appointment    @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
   patient     Patient        @relation(fields: [patient_id], references: [id], onDelete: Cascade)
@@ -333,9 +343,9 @@ model Prescription {
   diagnosisId   Int?
 
   medications  Medication[]
-  instructions String?      @db.Text
-  diagnosis    String       @db.Text
-  notes        String?      @db.Text
+  instructions String?      
+  diagnosis    String       
+  notes        String?      
 
   prescribedDate DateTime  @default(now())
   validUntil     DateTime?
@@ -360,7 +370,7 @@ model Medication {
   frequency      String
   duration       String
   quantity       String
-  instructions   String? @db.Text
+  instructions   String?
 
   administrations MedicationAdministration[]
   status          String                     @default("pending")
@@ -384,7 +394,7 @@ model MedicationAdministration {
   administeredByRole String
   administeredAt     DateTime @default(now())
   dosageGiven        String
-  notes              String?  @db.Text
+  notes              String?  
   status             String
 
   createdAt DateTime @default(now())
@@ -400,7 +410,7 @@ model Notification {
   userRole String
 
   title    String
-  message  String  @db.Text
+  message  String 
   type     String
   category String?
 

@@ -14,8 +14,9 @@ import {
 } from "recharts";
 
 interface DataProps {
-  data: AppointmentsChartProps;
+  data: AppointmentsChartProps[];
 }
+
 export const AppointmentChart = ({ data }: DataProps) => {
   return (
     <div className="bg-white rounded-xl p-4 h-full">

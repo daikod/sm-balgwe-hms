@@ -1,12 +1,12 @@
 "use client";
 
-import { useAuth, UserButton } from '@clerk/nextjs';
+import { UserButton, useUser } from '@clerk/nextjs';
 import { Bell } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
 export const Navbar = () => {
-  const user = useAuth();
+  const user = useUser();
   const pathname = usePathname();
   const [path, setPath] = useState("Overview"); // Default value for SSR
   const [mounted, setMounted] = useState(false); // Add mounted state
@@ -37,7 +37,7 @@ export const Navbar = () => {
           </p>
         </div>
 
-        {user?.userId && <UserButton />}
+        {user?.user && <UserButton />}
       </div>
     </div>
   );

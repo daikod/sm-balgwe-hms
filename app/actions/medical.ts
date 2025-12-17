@@ -80,16 +80,22 @@ export async function addNewBill(data: any) {
         },
       });
 
+      const receiptNumber = Number(
+          `${Date.now()}${Math.floor(Math.random() * 100)}`
+       );
+
+
       if (!info?.bills?.length) {
         bill_info = await db.payment.create({
           data: {
             appointment_id: Number(data?.appointment_id),
             patient_id: info?.patient_id!,
+            receipt_number: receiptNumber,
             bill_date: new Date(),
             payment_date: new Date(),
-            discount: 0.0,
-            amount_paid: 0.0,
-            total_amount: 0.0,
+            discount: data?.discount ?? 0,
+            amount_paid: data?.amount_paid,
+            total_amount: data?.total_amount,
           },
         });
       } else {

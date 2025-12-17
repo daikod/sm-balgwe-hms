@@ -56,38 +56,55 @@ interface AllAppointmentsProps {
   id?: string;
 }
 
-// Build query for search and ID filtering
-const buildQuery = (id?: string, search?: string) => {
-  // Base conditions for search
-  const searchConditions = search
+/**
+ * ✅ FIXED: Explicitly typed Prisma-compatible query builder
+ * This resolves findMany / count type errors without changing behavior
+ */
+const buildQuery = (
+  id?: string,
+  search?: string
+): Prisma.AppointmentWhereInput | undefined => {
+  const searchConditions: Prisma.AppointmentWhereInput | undefined = search
     ? {
         OR: [
-          { patient: { first_name: { contains: search, mode: "insensitive" } } },
-          { patient: { last_name: { contains: search, mode: "insensitive" } } },
-          { doctor: { name: { contains: search, mode: "insensitive" } } },
+          {
+            patient: {
+              is: {
+                first_name: { contains: search, mode: "insensitive" },
+              },
+            },
+          },
+          {
+            patient: {
+              is: {
+                last_name: { contains: search, mode: "insensitive" },
+              },
+            },
+          },
+          {
+            doctor: {
+              is: {
+                name: { contains: search, mode: "insensitive" },
+              },
+            },
+          },
         ],
       }
-    : {};
+    : undefined;
 
-  // ID filtering conditions
-  const idConditions = id
+  const idConditions: Prisma.AppointmentWhereInput | undefined = id
     ? {
         OR: [{ patient_id: id }, { doctor_id: id }],
       }
-    : {};
+    : undefined;
 
-  // Combine both conditions with AND if both exist
-  const combinedQuery =
-    id || search
-      ? {
-          AND: [
-            ...(Object.keys(searchConditions).length > 0 ? [searchConditions] : []),
-            ...(Object.keys(idConditions).length > 0 ? [idConditions] : []),
-          ],
-        }
-      : {};
+  if (searchConditions && idConditions) {
+    return {
+      AND: [searchConditions, idConditions],
+    };
+  }
 
-  return combinedQuery;
+  return searchConditions ?? idConditions;
 };
 
 // Fetch patient appointments with pagination and optional search

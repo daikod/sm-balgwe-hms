@@ -11,7 +11,7 @@ import { auth } from "@clerk/nextjs/server";
 import { Appointment, Doctor, Patient } from "@prisma/client";
 import { format } from "date-fns";
 import { BriefcaseBusiness } from "lucide-react";
-import React from "react";
+import React, { Suspense} from "react";
 import { Pagination } from "@/components/pagination";
 import { AppointmentContainer } from "@/components/appointment-container";
 
@@ -164,7 +164,12 @@ const Appointments = async (props: {
         <div className="w-full lg:w-fit flex items-center justify-between lg:justify-start gap-2">
           <SearchInput />
 
-          {isPatient && <AppointmentContainer id={userId!} />}
+          {isPatient && (
+            <Suspense fallback={<div>Loading...</div>}>
+              <AppointmentContainer id={userId!} />
+            </Suspense>
+         )}
+          
         </div>
       </div>
 

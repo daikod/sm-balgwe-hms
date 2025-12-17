@@ -68,7 +68,7 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {scheduledAppointments.map((appointment: Appointment) => (
+              {scheduledAppointments.map((appointment) => (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
@@ -86,7 +86,7 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {inProgressAppointments.map((appointment: Appointment) => (
+              {inProgressAppointments.map((appointment) => (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
@@ -104,7 +104,7 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {completedAppointments.map((appointment: Appointment)=> (
+              {completedAppointments.map((appointment)=> (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}

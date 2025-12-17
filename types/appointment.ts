@@ -1,26 +1,38 @@
+import { AppointmentStatus, Gender } from "@prisma/client";
 
 
-export type AppointmentStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+/**
+ * Prisma-backed enum (single source of truth)
+ */
+export { AppointmentStatus };
 
+/**
+ * Patient projection for UI
+ */
 export type PatientInfo = {
   id: string;
   first_name: string;
   last_name: string;
   img?: string | null;
-  gender: string;
+  gender: Gender;
   colorCode?: string | null;
 };
 
+/**
+ * Doctor projection for UI
+ */
 export type DoctorInfo = {
-  id: string;
+  id?: string;
   name: string;
-  gender: string;
+  gender?: string | null; // ✅ optional
   specialization: string;
   img?: string | null;
   colorCode?: string | null;
-
 };
 
+/**
+ * Appointment type aligned with Prisma schema
+ */
 export type Appointment = {
   id: number;
   roomID: string;
@@ -32,3 +44,4 @@ export type Appointment = {
   patient?: PatientInfo | null;
   doctor?: DoctorInfo | null;
 };
+

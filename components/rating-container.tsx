@@ -1,18 +1,26 @@
-import { getRatingById } from "@/utils/services/doctor";
-import React from "react";
-import { RatingList } from "@/components/rating-list";
-import { RatingChart } from "@/components/charts/rating.chart";
+import db from '@/lib/db';
+
+
 
 export const RatingContainer = async ({ id }: { id: string }) => {
-  const { ratings, totalRatings, averageRating } = await getRatingById(id);
+  const ratings = await db.rating.findMany({
+    where: { staff_id: id }, // match your model's field
+    orderBy: { created_at: "desc" },
+  });
+
+  const totalRatings = ratings.length;
+  const averageRating =
+    totalRatings === 0
+      ? 0
+      : ratings.reduce((sum: any, r: any) => sum + r.rating, 0) / totalRatings;
 
   return (
     <div className="space-y-4">
-      <RatingChart
-        totalRatings={totalRatings!}
-        averageRating={Number(averageRating!)}
-      />
-      <RatingList data={ratings!} />
+      <h3 className="font-semibold text-lg">Doctor Ratings</h3>
+      <p className="text-sm text-gray-600">
+        Average Rating: <span className="font-medium">{averageRating.toFixed(1)} / 5</span>
+      </p>
+      <p className="text-sm text-gray-600">Total Reviews: {totalRatings}</p>
     </div>
   );
 };

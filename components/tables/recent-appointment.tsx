@@ -9,19 +9,9 @@ import { AppointmentStatusIndicator } from "@/components/appointment-status-indi
 import ViewAppointmentDialog from "@/components/view-appointment-dialog";
 import { auth } from "@clerk/nextjs/server";
 import { checkRole } from "@/utils/roles";
-import { getAppointmentById } from "@/utils/services/appointment";
 
 interface DataProps {
   data: Appointment[];
-}
-
-// Optional: updated ProfileImageProps for safety
-interface ProfileImageProps {
-  url?: string;
-  name?: string;
-  className?: string;
-  textClassName?: string;
-  bgColor?: string;
 }
 
 const columns = [
@@ -37,8 +27,18 @@ export const RecentAppointments = async ({ data }: DataProps) => {
   const { userId } = await auth();
   const isAdmin = await checkRole("ADMIN");
 
+  // ✅ Normalize doctor.gender null → undefined
+  const normalizedData = data.map((item) => ({
+    ...item,
+    doctor: item.doctor
+      ? {
+          ...item.doctor,
+          gender: item.doctor.gender ?? undefined,
+        }
+      : undefined,
+  }));
+
   const renderRow = (item: Appointment) => {
-    // Safe fallback values
     const patientName =
       (item.patient?.first_name ?? "") + " " + (item.patient?.last_name ?? "");
     const doctorName = item.doctor?.name ?? "";
@@ -107,7 +107,7 @@ export const RecentAppointments = async ({ data }: DataProps) => {
         </Button>
       </div>
 
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <Table columns={columns} renderRow={renderRow} data={normalizedData} />
     </div>
   );
 };

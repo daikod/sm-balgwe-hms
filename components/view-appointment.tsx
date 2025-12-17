@@ -1,4 +1,4 @@
-import { getAppointmentById } from "@/utils/services/appointment";
+import { getAppointmentById, getPatientAppointments } from "@/utils/services/appointment";
 import React from "react";
 import { NumberDomain } from "recharts/types/util/types";
 import {
@@ -36,7 +36,7 @@ export const ViewAppointment = async ({ id }: { id: string | undefined }) => {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-[425px] max-h-[95%] md:max-w-2xl 2xl:max-w-3xl p-8 overflow-y-auto">
+      <DialogContent className="max-w-106.25 max-h-[95%] md:max-w-2xl 2xl:max-w-3xl p-8 overflow-y-auto">
         <>
           <DialogHeader>
             <DialogTitle>Patient Appointment</DialogTitle>

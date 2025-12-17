@@ -1,209 +1,186 @@
-import db from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
-import { daysOfWeek } from "..";
-import { processAppointments } from "./patient";
+import { AppointmentStatus, Prisma } from "@prisma/client";
+import db from '@/lib/db';
 
-export async function getDoctors() {
-  try {
-    const data = await db.doctor.findMany();
-
-    return { success: true, data, status: 200 };
-  } catch (error) {
-    console.log(error);
-    return { success: false, message: "Internal Server Error", status: 500 };
-  }
-}
-export async function getDoctorDashboardStats() {
-  try {
-    const { userId } = await auth();
-
-    const todayDate = new Date().getDay();
-    const today = daysOfWeek[todayDate];
-
-    const [totalPatient, totalNurses, appointments, doctors] =
-      await Promise.all([
-        db.patient.count(),
-        db.staff.count({ where: { role: "NURSE" } }),
-        db.appointment.findMany({
-          where: { doctor_id: userId!, appointment_date: { lte: new Date() } },
-          include: {
-            patient: {
-              select: {
-                id: true,
-                first_name: true,
-                last_name: true,
-                gender: true,
-                date_of_birth: true,
-                colorCode: true,
-                img: true,
-              },
-            },
-            doctor: {
-              select: {
-                id: true,
-                name: true,
-                specialization: true,
-                img: true,
-                colorCode: true,
-              },
-            },
-          },
-          orderBy: { appointment_date: "desc" },
-        }),
-        db.doctor.findMany({
-          where: {
-            working_days: {
-              some: { day: { equals: today, mode: "insensitive" } },
-            },
-          },
-          select: {
-            id: true,
-            name: true,
-            specialization: true,
-            img: true,
-            colorCode: true,
-            working_days: true,
-          },
-          take: 5,
-        }),
-      ]);
-
-    const { appointmentCounts, monthlyData } = await processAppointments(
-      appointments as any
-    );
-
-    const last5Records = appointments.slice(0, 5);
-    // const availableDoctors = doctors.slice(0, 5);
-
-    return {
-      totalNurses,
-      totalPatient,
-      appointmentCounts,
-      last5Records,
-      availableDoctors: doctors,
-      totalAppointment: appointments?.length,
-      monthlyData,
+type AppointmentWithRelations =
+  Prisma.AppointmentGetPayload<{
+    include: {
+      patient: true;
+      doctor: true;
     };
-  } catch (error) {
-    console.log(error);
-    return { success: false, message: "Internal Server Error", status: 500 };
-  }
-}
+  }>;
 
-export async function getDoctorById(id: string) {
-  try {
-    const [doctor, totalAppointment] = await Promise.all([
-      db.doctor.findUnique({
-        where: { id },
-        include: {
-          working_days: true,
-          appointments: {
-            include: {
-              patient: {
-                select: {
-                  id: true,
-                  first_name: true,
-                  last_name: true,
-                  gender: true,
-                  img: true,
-                  colorCode: true,
-                },
-              },
-              doctor: {
-                select: {
-                  name: true,
-                  specialization: true,
-                  img: true,
-                  colorCode: true,
-                },
-              },
-            },
-            orderBy: { appointment_date: "desc" },
-            take: 10,
-          },
-        },
-      }),
-      db.appointment.count({
-        where: { doctor_id: id },
-      }),
-    ]);
 
-    return { data: doctor, totalAppointment };
-  } catch (error) {
-    console.log(error);
-    return { success: false, message: "Internal Server Error", status: 500 };
-  }
-}
+// Initialize counts
+const appointmentCounts: Record<AppointmentStatus, number> = {
+  PENDING: 0,
+  SCHEDULED: 0,
+  IN_PROGRESS: 0,
+  COMPLETED: 0,
+  CANCELLED: 0,
+};
 
-export async function getRatingById(id: string) {
-  try {
-    const data = await db.rating.findMany({
-      where: { staff_id: id },
+/**
+ * Prisma payload type WITH relations
+ */
+export type DoctorWithWorkingDays =
+  Prisma.DoctorGetPayload<{
+    include: { working_days: true };
+  }>;
+
+/**
+ * Get all doctors
+ */
+export const getDoctors = async () => {
+  const data: DoctorWithWorkingDays[] =
+    await db.doctor.findMany({
+      orderBy: { name: "asc" },
       include: {
-        patient: { select: { last_name: true, first_name: true } },
+        working_days: true,
       },
     });
 
-    const totalRatings = data?.length;
-    const sumRatings = data?.reduce((sum: any, el: any) => sum + el.rating, 0);
+  return { data };
+};
 
-    const averageRating = totalRatings > 0 ? sumRatings / totalRatings : 0;
-    const formattedRatings = (Math.round(averageRating * 10) / 10).toFixed(1);
+/**
+ * Get doctor by ID
+ */
+export const getDoctorById = async (id: string) => {
+  const data =
+    await db.doctor.findUnique({
+      where: { id },
+      include: {
+        working_days: true,
+        appointments: true,
+      },
+    });
 
-    return {
-      totalRatings,
-      averageRating: formattedRatings,
-      ratings: data,
-    };
-  } catch (error) {
-    console.log(error);
-    return { success: false, message: "Internal Server Error", status: 500 };
-  }
-}
+  if (!data) return { data: null, totalAppointment: 0 };
 
-export async function getAllDoctors({
+  return {
+    data,
+    totalAppointment: data.appointments.length,
+  };
+};
+
+/**
+ * Paginated doctors (admin)
+ */
+export const getAllDoctors = async ({
   page,
-  limit,
   search,
 }: {
-  page: number | string;
-  limit?: number | string;
+  page: number;
   search?: string;
-}) {
-  try {
-    const PAGE_NUMBER = Number(page) <= 0 ? 1 : Number(page);
-    const LIMIT = Number(limit) || 10;
+}) => {
+  const PAGE_SIZE = 10;
 
-    const SKIP = (PAGE_NUMBER - 1) * LIMIT;
-
-    const [doctors, totalRecords] = await Promise.all([
-      db.doctor.findMany({
-        where: {
-          OR: [
-            { name: { contains: search, mode: "insensitive" } },
-            { specialization: { contains: search, mode: "insensitive" } },
-            { email: { contains: search, mode: "insensitive" } },
-          ],
+  const where: Prisma.DoctorWhereInput = search
+    ? {
+        name: {
+          contains: search,
+          mode: "insensitive",
         },
-        include: { working_days: true },
-        skip: SKIP,
-        take: LIMIT,
-      }),
-      db.doctor.count(),
-    ]);
+      }
+    : {};
 
-    const totalPages = Math.ceil(totalRecords / LIMIT);
+  const [data, totalRecords] = await Promise.all([
+    db.doctor.findMany({
+      where,
+      include: { working_days: true },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      orderBy: { created_at: "desc" },
+    }),
+    db.doctor.count({ where }),
+  ]);
 
-    return {
-      success: true,
-      data: doctors,
-      totalRecords,
-      totalPages,
-      currentPage: PAGE_NUMBER,
-      status: 200,
-    };
-  } catch (error) {
-    console.log(error);
-    return { success: false, message: "Internal Server Error", status: 500 };
-  }
+  return {
+    data,
+    totalRecords,
+    totalPages: Math.ceil(totalRecords / PAGE_SIZE),
+    currentPage: page,
+  };
+};
+
+export const getRatingById = async (doctorId: string) => {
+  const ratings = await db.rating.findMany({
+    where: {
+      staff_id: doctorId,
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  const totalRatings = ratings.length;
+
+  const averageRating =
+    totalRatings === 0
+      ? 0
+      : ratings.reduce((sum: any, r: any) => sum + r.rating, 0) / totalRatings;
+
+  return {
+    ratings,
+    totalRatings,
+    averageRating,
+  };
+};
+
+export async function getDoctorDashboardStats(doctorId: string) {
+  const appointments: AppointmentWithRelations[] = await db.appointment.findMany({
+  where: { doctor_id: doctorId },
+  include: { patient: true, doctor: true },
+  orderBy: { appointment_date: "desc" },
+});
+
+
+// Type-safe loop
+appointments.forEach((a) => {
+  const status: AppointmentStatus = a.status as AppointmentStatus;
+  appointmentCounts[status] += 1;
+});
+
+
+
+  const last5Records = appointments.slice(0, 5).map((a) => ({
+    ...a,
+    doctor: a.doctor
+      ? {
+          ...a.doctor,
+          gender: a.doctor.gender ?? undefined,
+        }
+      : undefined,
+  }));
+
+  const monthMap: Record<string, number> = {};
+  appointments.forEach((a) => {
+    const month = a.appointment_date.toLocaleString("default", {
+      month: "short",
+    });
+    monthMap[month] = (monthMap[month] || 0) + 1;
+  });
+
+  const monthlyData = Object.entries(monthMap).map(([month, count]) => ({
+    month,
+    count,
+  }));
+
+  const totalPatient = new Set(appointments.map((a) => a.patient_id)).size;
+  const totalNurses = 0;
+  const totalAppointment = appointments.length;
+
+  const availableDoctors = await db.doctor.findMany({
+    where: { availability_status: "AVAILABLE" },
+  });
+
+  return {
+    totalPatient,
+    totalNurses,
+    totalAppointment,
+    availableDoctors,
+    monthlyData,
+    last5Records,
+    appointmentCounts,
+  };
 }

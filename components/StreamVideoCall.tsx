@@ -1,11 +1,12 @@
-
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { StreamVideo, StreamVideoClient, StreamCall } from '@stream-io/video-react-sdk'
-// @ts-ignore: CSS module without type declarations
-import '@stream-io/video-react-sdk/dist/css/styles.css'
+import {
+  StreamVideo,
+  StreamVideoClient,
+  StreamCall,
+} from '@stream-io/video-react-sdk'
 import MeetingRoom from './MeetingRoom'
 
 interface StreamVideoCallProps {
@@ -15,71 +16,84 @@ interface StreamVideoCallProps {
   appointmentData: any
 }
 
-const StreamVideoCall = ({ 
-  meetingId, 
-  userId, 
+const StreamVideoCall = ({
+  meetingId,
+  userId,
   userRole,
-  appointmentData 
+  appointmentData,
 }: StreamVideoCallProps) => {
   const { user } = useUser()
-  const [client, setClient] = useState<StreamVideoClient | null>(null)
-  const [call, setCall] = useState<any>(null)
+  const clientRef = useRef<StreamVideoClient | null>(null)
+  const callRef = useRef<any>(null)
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
 
-    const initStream = async () => {
-      // Fetch Stream token from your API
-      const response = await fetch('/api/stream/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      })
+    const init = async () => {
+      try {
+        const res = await fetch('/api/stream/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        })
 
-      const { token } = await response.json()
+        const { token } = await res.json()
+        if (!token) throw new Error('Missing Stream token')
 
-      // Initialize Stream client
-      const streamClient = new StreamVideoClient({
-        apiKey: process.env.NEXT_PUBLIC_STREAM_API_KEY!,
-        user: {
-          id: userId,
-          name: user.fullName || user.username || 'User',
-          image: user.imageUrl,
-        },
-        token,
-      })
+        const client = new StreamVideoClient({
+          apiKey: process.env.NEXT_PUBLIC_STREAM_API_KEY!,
+          user: {
+            id: userId,
+            name: user.fullName || user.username || 'User',
+            image: user.imageUrl || '',
+          },
+          token,
+        })
 
-      setClient(streamClient)
+        const call = client.call('default', `appointment-${meetingId}`)
+        await call.join({ create: true })
 
-      // Create or join call
-      const callInstance = streamClient.call('default', meetingId)
-      await callInstance.join({ create: true })
-      setCall(callInstance)
+        clientRef.current = client
+        callRef.current = call
+        setLoading(false)
+      } catch (e) {
+        console.error(e)
+        setError('Failed to connect to video consultation')
+        setLoading(false)
+      }
     }
 
-    initStream()
+    init()
 
     return () => {
-      call?.leave()
-      client?.disconnectUser()
+      callRef.current?.leave().catch(() => {})
+      clientRef.current?.disconnectUser().catch(() => {})
     }
   }, [user, userId, meetingId])
 
-  if (!client || !call) {
+  if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white">Connecting to consultation...</p>
-        </div>
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
+        Connecting to consultation...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-900 text-white">
+        {error}
       </div>
     )
   }
 
   return (
-    <StreamVideo client={client}>
-      <StreamCall call={call}>
-        <MeetingRoom 
+    <StreamVideo client={clientRef.current!}>
+      <StreamCall call={callRef.current!}>
+        <MeetingRoom
           meetingId={meetingId}
           userRole={userRole}
           appointmentData={appointmentData}

@@ -48,7 +48,7 @@ const columns = [
 
 const DoctorsList = async (props: SearchParamsProps) => {
   const searchParams = await props.searchParams;
-  const page = (searchParams?.p || "1") as string;
+  const page = Number(searchParams?.p) || 1; // <-- convert to number
   const searchQuery = (searchParams?.q || "") as string;
 
   const { data, totalPages, totalRecords, currentPage } = await getAllDoctors({

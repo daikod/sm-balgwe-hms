@@ -110,20 +110,22 @@ export const ReviewForm = ({ staffId }: { staffId: string }) => {
                     <FormControl>
                       <div className="flex items-center space-x-3">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            onClick={() => field.onChange(star)}
-                          >
-                            <StarIcon
-                              size={30}
-                              className={cn(
-                                star <= field.value
-                                  ? "text-yellow-500 fill-yellow-500"
-                                  : "text-gray-400"
-                              )}
-                            />
-                          </button>
-                        ))}
+                <button
+                  key={star}
+                  type="button" // prevents accidental form submission
+                  onClick={() => field.onChange(star)}
+                  aria-label={`${star} star${star > 1 ? "s" : ""}`} // accessible label
+                >
+                  <StarIcon
+                    size={30}
+                    className={cn(
+                      star <= field.value
+                        ? "text-yellow-500 fill-yellow-500"
+                      : "text-gray-400"
+                    )}
+                  />
+                </button>
+              ))}
                       </div>
                     </FormControl>
                     <FormDescription>

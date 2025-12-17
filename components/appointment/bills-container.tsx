@@ -141,13 +141,13 @@ export const BillsContainer = async ({ id }: { id: string }) => {
       <Separator />
 
       <div className="flex flex-wrap lg:flex-nowrap items-center justify-between md:text-center py-2 space-y-6">
-        <div className="w-[120px]">
+        <div className="w-30">
           <span className="text-gray-500">Total Bill</span>
           <p className="text-xl font-semibold">
             {(data?.total_amount || totalBills).toFixed(2)}
           </p>
         </div>
-        <div className="w-[120px]">
+        <div className="w-30">
           <span className="text-gray-500">Discount</span>
           <p className="text-xl font-semibold text-yellow-600">
             {(data?.discount || 0.0).toFixed(2)}{" "}
@@ -157,19 +157,19 @@ export const BillsContainer = async ({ id }: { id: string }) => {
             </span>
           </p>
         </div>
-        <div className="w-[120px]">
+        <div className="w-30">
           <span className="text-gray-500">Payable</span>
           <p className="text-xl font-semibold ">
             {(discount?.finalAmount || 0.0).toFixed(2)}
           </p>
         </div>
-        <div className="w-[120px]">
+        <div className="w-30">
           <span className="text-gray-500">Amount Paid</span>
           <p className="text-xl font-semibold text-emerald-600">
             {(data?.amount_paid || 0.0).toFixed(2)}
           </p>
         </div>
-        <div className="w-[120px]">
+        <div className="w-30">
           <span className="text-gray-500">Unpaid Amount</span>
           <p className="text-xl font-semibold text-red-600">
             {(discount?.finalAmount! - data?.amount_paid! || 0.0).toFixed(2)}

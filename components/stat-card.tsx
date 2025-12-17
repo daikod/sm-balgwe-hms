@@ -29,7 +29,7 @@ export const StatCard = ({
   link,
 }: CardProps) => {
   return (
-    <Card className={cn("w-full md:w-[330px] 2xl:w-[250px]", className)}>
+    <Card className={cn("w-full md:w-82.5 2xl:w-62.5", className)}>
       <CardHeader className="flex flex-row items-center justify-between py-3 capitalize">
         <h3>{title}</h3>
         <Button

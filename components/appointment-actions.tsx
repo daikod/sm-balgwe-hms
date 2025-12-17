@@ -5,10 +5,11 @@ import { Button } from "./ui/button";
 import { EllipsisVertical, User } from "lucide-react";
 import Link from "next/link";
 import { AppointmentActionDialog } from "./appointment-action-dialog";
+import { AppointmentStatus } from "@prisma/client";
 
 interface ActionsProps {
   userId: string;
-  status: string;
+  status: AppointmentStatus;
   patientId: string;
   doctorId: string;
   appointmentId: number;
@@ -49,7 +50,7 @@ export const AppointmentActionOptions = async ({
             </Link>
           </Button>
 
-          {status !== "SCHEDULED" && (
+          {status !== AppointmentStatus.SCHEDULED && (
             <AppointmentActionDialog
               type="approve"
               id={appointmentId}
@@ -60,7 +61,7 @@ export const AppointmentActionOptions = async ({
             type="cancel"
             id={appointmentId}
             disabled={
-              status === "PENDING" &&
+              status === AppointmentStatus.PENDING &&
               (isAdmin || user.userId === doctorId || user.userId === patientId)
             }
           />

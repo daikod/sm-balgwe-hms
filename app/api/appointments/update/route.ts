@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import db from '@/lib/db' // Your Prisma client
+import db from '@/lib/db'
+import { AppointmentStatus } from '@prisma/client'
 
 export async function POST(req: Request) {
   try {
@@ -11,11 +12,17 @@ export async function POST(req: Request) {
 
     const { appointmentId, status } = await req.json()
 
+    if (!Object.values(AppointmentStatus).includes(status)) {
+      return NextResponse.json(
+        { error: 'Invalid appointment status' },
+        { status: 400 }
+      )
+    }
+
     const appointment = await db.appointment.update({
       where: { id: appointmentId },
-      data: { 
+      data: {
         status,
-        updated_at: new Date(),
       },
     })
 

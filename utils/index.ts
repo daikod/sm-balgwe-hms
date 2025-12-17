@@ -31,32 +31,24 @@ export function formatDateTime(isoDate: string): string {
   return date.toLocaleString("en-US", options);
 }
 
-export function calculateAge(dob: Date | string): string {
-  const dobDate = typeof dob === 'string' ? new Date(dob) : dob;
-  
+export function calculateAge(dob?: Date | string | null): string {
+  if (!dob) return "N/A"; // handle undefined or null
+
+  const dobDate = typeof dob === "string" ? new Date(dob) : dob;
   const today = new Date();
+
   let years = today.getFullYear() - dobDate.getFullYear();
   let months = today.getMonth() - dobDate.getMonth();
 
-  if (months < 0) {
+  if (months < 0 || (months === 0 && today.getDate() < dobDate.getDate())) {
     years--;
     months += 12;
   }
 
-  if (months === 0 && today.getDate() < dobDate.getDate()) {
-    years--;
-    months = 11;
-  }
-
-  if (years === 0) {
-    return `${months} months old`;
-  }
+  if (years <= 0) return `${months} months old`;
 
   let ageString = `${years} years`;
-
-  if (months > 0) {
-    ageString += ` ${months} months`;
-  }
+  if (months > 0) ageString += ` ${months} months`;
 
   return ageString + " old";
 }

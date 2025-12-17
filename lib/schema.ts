@@ -46,7 +46,10 @@ export const DoctorSchema = z.object({
     .trim()
     .min(2, "Name must be at least 2 characters")
     .max(50, "Name must be at most 50 characters"),
-  phone: z.string().min(10, "Enter phone number").max(10, "Enter phone number"),
+  phone: z
+  .string()
+  .min(10, "Enter a valid phone number")
+  .max(15, "Enter a valid phone number"),
   email: z.string().email("Invalid email address."),
   address: z
     .string()

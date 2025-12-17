@@ -40,13 +40,13 @@ export default function ViewAppointmentDialog({
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-[425px] max-h-[95%] md:max-w-2xl 2xl:max-w-3xl p-8 overflow-y-auto">
+      <DialogContent className="max-w-106.25 max-h-[95%] md:max-w-2xl 2xl:max-w-3xl p-8 overflow-y-auto">
         <>
           <DialogHeader>
             <DialogTitle>Patient Appointment</DialogTitle>
             <DialogDescription>
               This appointment was booked on the{" "}
-              {formatDateTime(data?.created_at.toString())}
+              {data?.created_at ? formatDateTime(data?.created_at) : "Unknown date"}
             </DialogDescription>
           </DialogHeader>
 

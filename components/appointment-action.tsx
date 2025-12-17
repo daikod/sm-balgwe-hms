@@ -10,36 +10,35 @@ import { appointmentAction } from "@/app/actions/appointment";
 
 interface ActionProps {
   id: string | number;
-  status: string;
+  status: AppointmentStatus; // ✅ FIX
 }
+
 export const AppointmentAction = ({ id, status }: ActionProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState<AppointmentStatus | null>(null);
   const [reason, setReason] = useState("");
   const router = useRouter();
 
   const handleAction = async () => {
+    if (!selected) return;
+
     try {
       setIsLoading(true);
+
       const newReason =
         reason ||
-        `Appointment has ben ${selected.toLowerCase()} on ${new Date()}`;
+        `Appointment has been ${selected.toLowerCase()} on ${new Date()}`;
 
-      const resp = await appointmentAction(
-        id,
-        selected as AppointmentStatus,
-        newReason
-      );
+      const resp = await appointmentAction(id, selected, newReason);
 
       if (resp.success) {
         toast.success(resp.msg);
-
         router.refresh();
-      } else if (resp.error) {
+      } else {
         toast.error(resp.msg);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error("Something went wrong. Try again later.");
     } finally {
       setIsLoading(false);
@@ -51,58 +50,50 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
       <div className="flex items-center space-x-3">
         <Button
           variant="outline"
-          disabled={status === "PENDING" || isLoading || status === "COMPLETED"}
-          className="bg-yellow-200 text-black"
-          onClick={() => setSelected("PENDING")}
+          disabled={status === AppointmentStatus.PENDING || isLoading || status === AppointmentStatus.COMPLETED}
+          onClick={() => setSelected(AppointmentStatus.PENDING)}
         >
           Pending
         </Button>
+
         <Button
           variant="outline"
-          disabled={
-            status === "SCHEDULED" || isLoading || status === "COMPLETED"
-          }
-          className="bg-blue-200 text-black"
-          onClick={() => setSelected("SCHEDULED")}
+          disabled={status === AppointmentStatus.SCHEDULED || isLoading || status === AppointmentStatus.COMPLETED}
+          onClick={() => setSelected(AppointmentStatus.SCHEDULED)}
         >
           Approve
         </Button>
+
         <Button
           variant="outline"
-          disabled={
-            status === "COMPLETED" || isLoading || status === "COMPLETED"
-          }
-          className="bg-emerald-200 text-black"
-          onClick={() => setSelected("COMPLETED")}
+          disabled={status === AppointmentStatus.COMPLETED || isLoading}
+          onClick={() => setSelected(AppointmentStatus.COMPLETED)}
         >
           Completed
         </Button>
+
         <Button
           variant="outline"
-          disabled={
-            status === "CANCELLED" || isLoading || status === "COMPLETED"
-          }
-          className="bg-red-200 text-black"
-          onClick={() => setSelected("CANCELLED")}
+          disabled={status === AppointmentStatus.CANCELLED || isLoading || status === AppointmentStatus.COMPLETED}
+          onClick={() => setSelected(AppointmentStatus.CANCELLED)}
         >
           Cancel
         </Button>
       </div>
-      {selected === "CANCELLED" && (
-        <>
-          <Textarea
-            disabled={isLoading}
-            className="mt-4"
-            placeholder="Enter reason...."
-            onChange={(e) => setReason(e.target.value)}
-          ></Textarea>
-        </>
+
+      {selected === AppointmentStatus.CANCELLED && (
+        <Textarea
+          disabled={isLoading}
+          className="mt-4"
+          placeholder="Enter reason..."
+          onChange={(e) => setReason(e.target.value)}
+        />
       )}
 
       {selected && (
         <div className="flex items-center justify-between mt-6 bg-red-100 p-4 rounded">
-          <p className="">Are you sure you want to perform this action?</p>
-          <Button disabled={isLoading} type="button" onClick={handleAction}>
+          <p>Are you sure you want to perform this action?</p>
+          <Button disabled={isLoading} onClick={handleAction}>
             Yes
           </Button>
         </div>

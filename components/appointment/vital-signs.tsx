@@ -85,15 +85,12 @@ export const VitalSigns = async ({
                   <ItemCard label="Height" value={`${el?.height} cm`} />
 
                   <div className="w-full">
-                    <div className="flex gap-x-2 items-center">
-                      <p className="text-lg xl:text-xl font-medium">{bmi}</p>
-                      <span
-                        className="text-sm font-medium"
-                        style={{ color: colorCode }}
-                      >
-                        ({status})
-                      </span>
-                    </div>
+                    <div className="flex gap-x-2 items-center" style={{ "--status-color": colorCode } as React.CSSProperties}>
+                    <p className="text-lg xl:text-xl font-medium">{bmi}</p>
+                    <span className="text-sm font-medium text(--status-color)">
+                    ({status})
+                    </span>
+                  </div>
                   </div>
                 </div>
 

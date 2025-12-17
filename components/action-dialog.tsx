@@ -106,13 +106,13 @@ export const ActionDialog = ({
         <DialogTrigger asChild>
           <Button
             variant={"outline"}
-            className="flex items-center justify-center rounded-full text-blue-600/10 text-blue-600 hover:underline"
+            className="flex items-center justify-center rounded-full text-blue-600/10 hover:underline"
           >
             View
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="max-w-[300px] md:max-w-2xl max-h-[90%] p-8 overflow-y-auto">
+        <DialogContent className="max-w-75 md:max-w-2xl max-h-[90%] p-8 overflow-y-auto">
           <DialogTitle className="text-lg text-gray-600 font-semibold mb-4">
             Staff Information
           </DialogTitle>

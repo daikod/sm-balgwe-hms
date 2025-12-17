@@ -2,6 +2,7 @@ import db from "@/lib/db";
 import { getMonth, format, startOfYear, endOfMonth, isToday } from "date-fns";
 import { daysOfWeek } from "..";
 
+
 type AppointmentStatus = "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
 interface Appointment {
@@ -69,6 +70,8 @@ export const processAppointments = async (appointments: Appointment[]) => {
   return { appointmentCounts, monthlyData };
 };
 
+
+
 export async function getPatientDashboardStatistics(id: string) {
   try {
     if (!id) {
@@ -101,35 +104,42 @@ export async function getPatientDashboardStatistics(id: string) {
     }
 
     const appointments = await db.appointment.findMany({
-      where: { patient_id: data?.id },
+      where: { patient_id: data.id },
       include: {
+        patient: {
+          select: {
+            id: true, // ✅ include ID
+            first_name: true,
+            last_name: true,
+            gender: true,
+            img: true,
+            colorCode: true,
+          },
+        },
         doctor: {
           select: {
-            id: true,
+            id: true, // ✅ include ID
             name: true,
             img: true,
             specialization: true,
             colorCode: true,
-          },
-        },
-        patient: {
-          select: {
-            first_name: true,
-            last_name: true,
-            gender: true,
-            date_of_birth: true,
-            img: true,
-            colorCode: true,
+            working_days: {
+              select: {
+                day: true,
+                start_time: true,
+                close_time: true,
+              },
+            },
           },
         },
       },
-
       orderBy: { appointment_date: "desc" },
     });
 
     const { appointmentCounts, monthlyData } = await processAppointments(
       appointments as any
     );
+
     const last5Records = appointments.slice(0, 5);
 
     const today = daysOfWeek[new Date().getDay()];
@@ -140,8 +150,14 @@ export async function getPatientDashboardStatistics(id: string) {
         name: true,
         specialization: true,
         img: true,
-        working_days: true,
         colorCode: true,
+        working_days: {
+          select: {
+            day: true,
+            start_time: true,
+            close_time: true,
+          },
+        },
       },
       where: {
         working_days: {
@@ -172,6 +188,7 @@ export async function getPatientDashboardStatistics(id: string) {
   }
 }
 
+
 export async function getPatientById(id: string) {
   try {
     const patient = await db.patient.findUnique({
@@ -182,7 +199,7 @@ export async function getPatientById(id: string) {
       return {
         success: false,
         message: "Patient data not found",
-        status: 200,
+        status: 404,
         data: null,
       };
     }

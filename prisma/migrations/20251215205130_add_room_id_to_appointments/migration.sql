@@ -1,12 +1,3 @@
-/*
-  Warnings:
-
-  - Added the required column `medical_consent` to the `Patient` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `privacy_consent` to the `Patient` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `service_consent` to the `Patient` table without a default value. This is not possible if the table is not empty.
-  - Added the required column `updated_at` to the `Patient` table without a default value. This is not possible if the table is not empty.
-
-*/
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'NURSE', 'DOCTOR', 'LAB_TECHNICIAN', 'PATIENT', 'CASHIER');
 
@@ -20,7 +11,10 @@ CREATE TYPE "JOBTYPE" AS ENUM ('FULL', 'PART');
 CREATE TYPE "Gender" AS ENUM ('MALE', 'FEMALE');
 
 -- CreateEnum
-CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING', 'SCHEDULED', 'CANCELLED', 'COMPLETED');
+CREATE TYPE "AppointmentType" AS ENUM ('VIDEO', 'PHYSICAL');
+
+-- CreateEnum
+CREATE TYPE "AppointmentStatus" AS ENUM ('PENDING', 'SCHEDULED', 'CANCELLED', 'COMPLETED', 'IN_PROGRESS');
 
 -- CreateEnum
 CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'CARD');
@@ -28,15 +22,36 @@ CREATE TYPE "PaymentMethod" AS ENUM ('CASH', 'CARD');
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PAID', 'UNPAID', 'PART');
 
--- AlterTable
-ALTER TABLE "Patient" ADD COLUMN     "colorCode" TEXT,
-ADD COLUMN     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-ADD COLUMN     "gender" "Gender" NOT NULL DEFAULT 'MALE',
-ADD COLUMN     "img" TEXT,
-ADD COLUMN     "medical_consent" BOOLEAN NOT NULL,
-ADD COLUMN     "privacy_consent" BOOLEAN NOT NULL,
-ADD COLUMN     "service_consent" BOOLEAN NOT NULL,
-ADD COLUMN     "updated_at" TIMESTAMP(3) NOT NULL;
+-- CreateTable
+CREATE TABLE "Patient" (
+    "id" TEXT NOT NULL,
+    "first_name" TEXT NOT NULL,
+    "last_name" TEXT NOT NULL,
+    "date_of_birth" TIMESTAMP(3) NOT NULL,
+    "gender" "Gender" NOT NULL DEFAULT 'MALE',
+    "phone" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "marital_status" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "emergency_contact_name" TEXT NOT NULL,
+    "emergency_contact_number" TEXT NOT NULL,
+    "relation" TEXT NOT NULL,
+    "blood_group" TEXT,
+    "allergies" TEXT,
+    "medical_conditions" TEXT,
+    "medical_history" TEXT,
+    "insurance_provider" TEXT,
+    "insurance_number" TEXT,
+    "privacy_consent" BOOLEAN NOT NULL,
+    "service_consent" BOOLEAN NOT NULL,
+    "medical_consent" BOOLEAN NOT NULL,
+    "img" TEXT,
+    "colorCode" TEXT,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Patient_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Doctor" (
@@ -93,12 +108,15 @@ CREATE TABLE "Staff" (
 -- CreateTable
 CREATE TABLE "Appointment" (
     "id" SERIAL NOT NULL,
+    "roomID" TEXT NOT NULL DEFAULT '',
     "patient_id" TEXT NOT NULL,
     "doctor_id" TEXT NOT NULL,
     "appointment_date" TIMESTAMP(3) NOT NULL,
+    "scheduledAT" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "time" TEXT NOT NULL,
     "status" "AppointmentStatus" NOT NULL DEFAULT 'PENDING',
-    "type" TEXT NOT NULL,
+    "duration" INTEGER NOT NULL DEFAULT 30,
+    "type" "AppointmentType" NOT NULL,
     "note" TEXT,
     "reason" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -248,6 +266,86 @@ CREATE TABLE "Services" (
     CONSTRAINT "Services_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "prescriptions" (
+    "id" TEXT NOT NULL,
+    "prescriptionNumber" TEXT NOT NULL,
+    "patientId" TEXT NOT NULL,
+    "doctorId" TEXT NOT NULL,
+    "appointmentId" INTEGER,
+    "diagnosisId" INTEGER,
+    "instructions" TEXT,
+    "diagnosis" TEXT NOT NULL,
+    "notes" TEXT,
+    "prescribedDate" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "validUntil" TIMESTAMP(3),
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "prescriptions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "medications" (
+    "id" TEXT NOT NULL,
+    "prescriptionId" TEXT NOT NULL,
+    "medicationName" TEXT NOT NULL,
+    "dosage" TEXT NOT NULL,
+    "frequency" TEXT NOT NULL,
+    "duration" TEXT NOT NULL,
+    "quantity" TEXT NOT NULL,
+    "instructions" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "medications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "medication_administrations" (
+    "id" TEXT NOT NULL,
+    "medicationId" TEXT NOT NULL,
+    "patientId" TEXT NOT NULL,
+    "administeredBy" TEXT NOT NULL,
+    "administeredByRole" TEXT NOT NULL,
+    "administeredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dosageGiven" TEXT NOT NULL,
+    "notes" TEXT,
+    "status" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "medication_administrations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "notifications" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "userRole" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "category" TEXT,
+    "relatedId" TEXT,
+    "relatedType" TEXT,
+    "actionUrl" TEXT,
+    "actionLabel" TEXT,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "readAt" TIMESTAMP(3),
+    "priority" TEXT NOT NULL DEFAULT 'normal',
+    "senderId" TEXT,
+    "senderName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3),
+
+    CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Patient_email_key" ON "Patient"("email");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Doctor_email_key" ON "Doctor"("email");
 
@@ -259,6 +357,39 @@ CREATE UNIQUE INDEX "Payment_appointment_id_key" ON "Payment"("appointment_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LabTest_service_id_key" ON "LabTest"("service_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "prescriptions_prescriptionNumber_key" ON "prescriptions"("prescriptionNumber");
+
+-- CreateIndex
+CREATE INDEX "prescriptions_patientId_idx" ON "prescriptions"("patientId");
+
+-- CreateIndex
+CREATE INDEX "prescriptions_doctorId_idx" ON "prescriptions"("doctorId");
+
+-- CreateIndex
+CREATE INDEX "prescriptions_status_idx" ON "prescriptions"("status");
+
+-- CreateIndex
+CREATE INDEX "medications_prescriptionId_idx" ON "medications"("prescriptionId");
+
+-- CreateIndex
+CREATE INDEX "medication_administrations_medicationId_idx" ON "medication_administrations"("medicationId");
+
+-- CreateIndex
+CREATE INDEX "medication_administrations_patientId_idx" ON "medication_administrations"("patientId");
+
+-- CreateIndex
+CREATE INDEX "notifications_userId_idx" ON "notifications"("userId");
+
+-- CreateIndex
+CREATE INDEX "notifications_isRead_idx" ON "notifications"("isRead");
+
+-- CreateIndex
+CREATE INDEX "notifications_type_idx" ON "notifications"("type");
+
+-- CreateIndex
+CREATE INDEX "notifications_priority_idx" ON "notifications"("priority");
 
 -- AddForeignKey
 ALTER TABLE "WorkingDays" ADD CONSTRAINT "WorkingDays_doctor_id_fkey" FOREIGN KEY ("doctor_id") REFERENCES "Doctor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -307,3 +438,21 @@ ALTER TABLE "Rating" ADD CONSTRAINT "Rating_staff_id_fkey" FOREIGN KEY ("staff_i
 
 -- AddForeignKey
 ALTER TABLE "Rating" ADD CONSTRAINT "Rating_patient_id_fkey" FOREIGN KEY ("patient_id") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "prescriptions" ADD CONSTRAINT "prescriptions_doctorId_fkey" FOREIGN KEY ("doctorId") REFERENCES "Doctor"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "medications" ADD CONSTRAINT "medications_prescriptionId_fkey" FOREIGN KEY ("prescriptionId") REFERENCES "prescriptions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "medication_administrations" ADD CONSTRAINT "medication_administrations_medicationId_fkey" FOREIGN KEY ("medicationId") REFERENCES "medications"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "medication_administrations" ADD CONSTRAINT "medication_administrations_patientId_fkey" FOREIGN KEY ("patientId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Patient"("id") ON DELETE CASCADE ON UPDATE CASCADE;

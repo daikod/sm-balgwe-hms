@@ -1,4 +1,4 @@
-import { availableDays } from "@/components/available-doctor";
+import  availableDays  from "@/components/available-doctor";
 import { PatientRatingContainer } from "@/components/patient-rating-container";
 import { ProfileImage } from "@/components/profile-image";
 import { RatingContainer } from "@/components/rating-container";
@@ -12,6 +12,9 @@ import { BsCalendarDateFill, BsPersonWorkspace } from "react-icons/bs";
 import { FaBriefcaseMedical, FaCalendarDays } from "react-icons/fa6";
 import { IoTimeSharp } from "react-icons/io5";
 import { MdEmail, MdLocalPhone } from "react-icons/md";
+import { AvailableDoctorProps } from "@/types/data-types";
+import { any } from "zod";
+
 
 const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
   const params = await props.params;
@@ -91,7 +94,7 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
               <IoTimeSharp className="size-5" />
               <div>
                 <h1 className="text-xl font-serif">
-                  {availableDays({ data: data.working_days })}
+                  {availableDays({data: data.working_days} as any)}
                 </h1>
                 <span className="text-sm text-gray-500">Working Hours</span>
               </div>
