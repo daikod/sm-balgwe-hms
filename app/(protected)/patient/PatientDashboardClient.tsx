@@ -1,4 +1,3 @@
-// app/(protected)/patient/PatientDashboardClient.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -13,9 +12,36 @@ import { RecentAppointments } from '@/components/tables/recent-appointment';
 import { BookAppointmentButton } from '@/components/patient/book-appointment-button';
 import { Button } from '@/components/ui/button';
 import { sendVideoCallStartedEmail } from '@/utils/email';
-
+import { Gender } from '@prisma/client';
 import { Appointment } from '@/types/appointment';
-import { Patient } from '@prisma/client';
+
+interface PatientDTO {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string | null;
+  address?: string | null;
+  img?: string | null;
+  date_of_birth?: string | Date;
+  gender?: string;
+  marital_status?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_number?: string | null;
+  relation?: string | null;
+  blood_group?: string | null;
+  allergies?: string | null;
+  medical_conditions?: string | null;
+  medical_history?: string | null;
+  insurance_provider?: string | null;
+  insurance_number?: string | null;
+  privacy_consent?: boolean;
+  service_consent?: boolean;
+  medical_consent?: boolean;
+  colorCode?: string | null;
+  created_at?: string | Date;
+  updated_at?: string | Date;
+}
 
 interface PatientDashboardClientProps {
   user: {
@@ -25,7 +51,7 @@ interface PatientDashboardClientProps {
     email: string | null;
     imageUrl: string;
   };
-  patientData: Patient;
+  patientData: PatientDTO;
   doctors: any[];
   data: any;
   appointmentCounts: any;
@@ -46,6 +72,41 @@ const PatientDashboardClient: React.FC<PatientDashboardClientProps> = ({
 }) => {
   const [isDoctorJoined, setIsDoctorJoined] = useState(false);
 
+  /* ✅ FIX: normalization moved INSIDE component */
+  const normalizedPatientForBooking = {
+    id: patientData.id,
+    first_name: patientData.first_name,
+    last_name: patientData.last_name,
+    address: patientData.address ?? '',
+    img: patientData.img ?? null,
+    date_of_birth: patientData.date_of_birth
+      ? new Date(patientData.date_of_birth)
+      : new Date(),
+    gender: (patientData.gender as Gender) ?? Gender.MALE,
+    phone: patientData.phone ?? '',
+    email: patientData.email,
+    marital_status: patientData.marital_status ?? '',
+    emergency_contact_name: patientData.emergency_contact_name ?? '',
+    emergency_contact_number: patientData.emergency_contact_number ?? '',
+    relation: patientData.relation ?? '',
+    blood_group: patientData.blood_group ?? null,
+    allergies: patientData.allergies ?? null,
+    medical_conditions: patientData.medical_conditions ?? null,
+    medical_history: patientData.medical_history ?? null,
+    insurance_provider: patientData.insurance_provider ?? null,
+    insurance_number: patientData.insurance_number ?? null,
+    privacy_consent: patientData.privacy_consent ?? false,
+    service_consent: patientData.service_consent ?? false,
+    medical_consent: patientData.medical_consent ?? false,
+    colorCode: patientData.colorCode ?? null,
+    created_at: patientData.created_at
+      ? new Date(patientData.created_at)
+      : new Date(),
+    updated_at: patientData.updated_at
+      ? new Date(patientData.updated_at)
+      : new Date(),
+  };
+
   useEffect(() => {
     last5Records.forEach((appointment) => {
       if (appointment.status === 'IN_PROGRESS') {
@@ -61,7 +122,7 @@ const PatientDashboardClient: React.FC<PatientDashboardClientProps> = ({
     await sendVideoCallStartedEmail({
       to: patientEmail,
       patientName: patientData.first_name,
-      doctorName: 'Doctor Name', // can be made dynamic later
+      doctorName: 'Doctor Name',
       roomID: `appointment-${appointmentId}`,
     });
   };
@@ -107,11 +168,9 @@ const PatientDashboardClient: React.FC<PatientDashboardClientProps> = ({
     },
   ];
 
-    useEffect(() => {
-      fetch("/api/appointments/check-missed", {
-        method: "POST",
-      });
-    }, []);
+  useEffect(() => {
+    fetch('/api/appointments/check-missed', { method: 'POST' });
+  }, []);
 
   return (
     <div className="py-6 px-3 flex flex-col rounded-xl xl:flex-row gap-6">
@@ -125,7 +184,7 @@ const PatientDashboardClient: React.FC<PatientDashboardClientProps> = ({
 
             <div className="space-x-2 flex items-center">
               <BookAppointmentButton
-                patientData={patientData}
+                patientData={normalizedPatientForBooking}
                 doctors={doctors}
               />
               <Button size="sm">{new Date().getFullYear()}</Button>
@@ -163,15 +222,8 @@ const PatientDashboardClient: React.FC<PatientDashboardClientProps> = ({
         </div>
 
         <AvailableDoctors data={doctors} />
-
-        <div className="mt-6">
-          <p className="text-sm text-gray-500">
-            Patient ratings coming soon
-          </p>
-        </div>
       </div>
 
-      {/* In-App Banner */}
       {isDoctorJoined && (
         <div className="fixed top-0 left-0 right-0 bg-green-600 text-white p-4 text-center">
           <p>The doctor has joined the video call! Join now.</p>
