@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   CallControls,
   CallParticipantsList,
@@ -17,19 +17,31 @@ interface MeetingRoomProps {
   meetingId: string
   userRole: 'patient' | 'doctor'
   appointmentData: any
+  onCallStart?: () => void
 }
 
 const MeetingRoom = ({
   meetingId,
   userRole,
   appointmentData,
+  onCallStart,
 }: MeetingRoomProps) => {
   const router = useRouter()
   const [layout, setLayout] = useState<'grid' | 'speaker'>('speaker')
   const [showParticipants, setShowParticipants] = useState(false)
+  const [showBanner, setShowBanner] = useState(false)
 
   const { useCallCallingState } = useCallStateHooks()
   const callingState = useCallCallingState()
+
+  useEffect(() => {
+    // Trigger onCallStart when the call starts (only for the doctor)
+    if (userRole === 'doctor' && callingState === CallingState.JOINED) {
+      onCallStart?.()
+      setShowBanner(true)
+      setTimeout(() => setShowBanner(false), 5000); // Hide banner after 5 seconds
+    }
+  }, [callingState, userRole, onCallStart])
 
   if (callingState !== CallingState.JOINED) {
     return (
@@ -108,6 +120,13 @@ const MeetingRoom = ({
           <CallStatsButton />
         </div>
       </div>
+
+      {/* Live Indicator Banner for Doctor */}
+      {showBanner && userRole === 'doctor' && (
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-2 rounded-xl shadow-lg">
+          <span>Doctor has joined the call</span>
+        </div>
+      )}
 
       {/* Video */}
       <div className="flex-1 relative">

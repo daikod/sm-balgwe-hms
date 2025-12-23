@@ -103,7 +103,9 @@ const Appointments = async (props: {
           <div>
             <h3 className="font-semibold uppercase">{patient_name}</h3>
             <span className="text-xs md:text-sm capitalize">
-              {item?.patient?.gender.toLowerCase()}
+              {item?.patient?.gender
+              ? item.patient.gender.toLowerCase()
+              : "unknown"}
             </span>
           </div>
         </td>

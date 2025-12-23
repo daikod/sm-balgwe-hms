@@ -13,6 +13,7 @@ export type PatientInfo = {
   id: string;
   first_name: string;
   last_name: string;
+  email: string;  // Add this line
   img?: string | null;
   gender: Gender;
   colorCode?: string | null;
@@ -44,4 +45,9 @@ export type Appointment = {
   patient?: PatientInfo | null;
   doctor?: DoctorInfo | null;
 };
+
+export enum AppointmentType {
+  VIDEO = 'VIDEO',
+  PHYSICAL = 'PHYSICAL',
+}
 

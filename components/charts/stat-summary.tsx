@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from "next/link";
 import { Button } from "../ui/button";
@@ -6,23 +6,25 @@ import { ResponsiveContainer, RadialBarChart, RadialBar } from "recharts";
 import { Users } from "lucide-react";
 import { formatNumber } from "@/utils";
 
-export const StatSummary = ({ data, total }: { data: any; total: number }) => {
+interface StatSummaryProps {
+  data: Record<string, number>;
+  total: number;
+}
+
+export const StatSummary = ({ data, total }: StatSummaryProps) => {
   const dataInfo = [
     { name: "Total", count: total || 0, fill: "white" },
-    {
-      name: "Appointments",
-      count: data?.PENDING + data?.SCHEDULED || 0,
-      fill: "#000000",
-    },
+    { name: "Appointments", count: (data?.PENDING || 0) + (data?.SCHEDULED || 0), fill: "#000000" },
     { name: "Consultation", count: data?.COMPLETED || 0, fill: "#2563eb" },
   ];
 
   const appointment = dataInfo[1].count;
   const consultation = dataInfo[2].count;
+  const totalVisible = appointment + consultation || 1; // prevent division by zero
 
   return (
-    <div className="bg-white rounded-xl w-full h-full p-4">
-      <div className="flex justify-between items-center">
+    <div className="bg-white rounded-xl w-full h-full p-4 flex flex-col">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-lg font-semibold">Summary</h1>
 
         <Button
@@ -35,8 +37,9 @@ export const StatSummary = ({ data, total }: { data: any; total: number }) => {
         </Button>
       </div>
 
-      <div className="relative w-full h-[75%]">
-        <ResponsiveContainer>
+      {/* Chart Container with explicit height */}
+      <div className="relative w-full flex-1 min-h-50 mb-4">
+        <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             cx="50%"
             cy="50%"
@@ -45,7 +48,7 @@ export const StatSummary = ({ data, total }: { data: any; total: number }) => {
             barSize={32}
             data={dataInfo}
           >
-            <RadialBar background dataKey={"count"} />
+            <RadialBar background dataKey="count" />
           </RadialBarChart>
         </ResponsiveContainer>
 
@@ -55,6 +58,7 @@ export const StatSummary = ({ data, total }: { data: any; total: number }) => {
         />
       </div>
 
+      {/* Legend / Stats */}
       <div className="flex justify-center gap-16">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -62,8 +66,7 @@ export const StatSummary = ({ data, total }: { data: any; total: number }) => {
             <h1 className="font-bold">{formatNumber(appointment)}</h1>
           </div>
           <h2 className="text-xs text-gray-400">
-            {dataInfo[1].name}(
-            {((appointment / (appointment + consultation)) * 100).toFixed(0)})
+            {dataInfo[1].name} ({((appointment / totalVisible) * 100).toFixed(0)}%)
           </h2>
         </div>
 
@@ -72,10 +75,8 @@ export const StatSummary = ({ data, total }: { data: any; total: number }) => {
             <div className="w-5 h-5 bg-[#2563eb] rounded-xl" />
             <h1 className="font-bold">{formatNumber(consultation)}</h1>
           </div>
-
           <h2 className="text-xs text-gray-400">
-            {dataInfo[2].name}(
-            {((consultation / (appointment + consultation)) * 100).toFixed(0)})
+            {dataInfo[2].name} ({((consultation / totalVisible) * 100).toFixed(0)}%)
           </h2>
         </div>
       </div>

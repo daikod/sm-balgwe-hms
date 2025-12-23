@@ -59,6 +59,11 @@ enum PaymentStatus {
   PART
 }
 
+enum Availability_status {
+  AVAILABLE
+  UNAVAILABLE
+}
+
 // ========================= MODELS =========================
 
 model Patient {
@@ -163,6 +168,7 @@ model Appointment {
   scheduledAT      DateTime          @default(now())
   time             String
   status           AppointmentStatus @default(PENDING)
+  video_link      String?  // <-- add this field
   duration         Int               @default(30)
 
   type             AppointmentType   // ✅ ENUM

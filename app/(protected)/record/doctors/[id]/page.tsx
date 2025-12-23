@@ -1,5 +1,4 @@
-import  availableDays  from "@/components/available-doctor";
-import { PatientRatingContainer } from "@/components/patient-rating-container";
+import availableDays from "@/components/available-doctor";
 import { ProfileImage } from "@/components/profile-image";
 import { RatingContainer } from "@/components/rating-container";
 import { RecentAppointments } from "@/components/tables/recent-appointment";
@@ -12,15 +11,20 @@ import { BsCalendarDateFill, BsPersonWorkspace } from "react-icons/bs";
 import { FaBriefcaseMedical, FaCalendarDays } from "react-icons/fa6";
 import { IoTimeSharp } from "react-icons/io5";
 import { MdEmail, MdLocalPhone } from "react-icons/md";
-import { AvailableDoctorProps } from "@/types/data-types";
-import { any } from "zod";
-
 
 const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
   const params = await props.params;
   const { data, totalAppointment } = await getDoctorById(params?.id);
 
   if (!data) return null;
+
+  // Dummy handlers for RecentAppointments
+  const userId = data.id; // current doctor ID
+  const isAdmin = false;
+  const onStartCall = async (appointmentId: string, patientEmail: string) => {
+    // implement call logic here
+    console.log("Starting call:", appointmentId, patientEmail);
+  };
 
   return (
     <div className="bg-gray-100/60 h-full rounded-xl py-6 px-3 2xl:px-5 flex flex-col lg:flex-row gap-6">
@@ -37,9 +41,7 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
 
             <div className="w-2/3 flex flex-col justify-between gap-x-4">
               <div className="flex items-center gap-4">
-                <h1 className="text=xl font-semibold uppercase">
-                  {data?.name}
-                </h1>
+                <h1 className="text-xl font-semibold uppercase">{data?.name}</h1>
               </div>
               <p className="text-sm text-gray-500">
                 {data?.address || "No address information"}
@@ -71,7 +73,7 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
             </div>
           </div>
 
-          {/* SATS */}
+          {/* STATS */}
           <div className="flex-1 flex gap-4 justify-between flex-wrap">
             <div className="doctorCard">
               <FaBriefcaseMedical className="size-5" />
@@ -83,18 +85,15 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
             <div className="doctorCard">
               <FaCalendarDays className="size-5" />
               <div>
-                <h1 className="text-xl font-serif">
-                  {data?.working_days?.length}
-                </h1>
+                <h1 className="text-xl font-serif">{data?.working_days?.length}</h1>
                 <span className="text-sm text-gray-500">Working Days</span>
               </div>
             </div>
-
             <div className="doctorCard">
               <IoTimeSharp className="size-5" />
               <div>
                 <h1 className="text-xl font-serif">
-                  {availableDays({data: data.working_days} as any)}
+                  {availableDays({ data: data.working_days } as any)}
                 </h1>
                 <span className="text-sm text-gray-500">Working Hours</span>
               </div>
@@ -110,15 +109,19 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
             </div>
           </div>
         </div>
-        {/* recent appointment */}
 
+        {/* recent appointments */}
         <div className="bg-white rounded-e-xl p-4 mt-6">
-          <RecentAppointments data={data?.appointments} />
+          <RecentAppointments
+            data={data?.appointments}
+            userId={userId}
+            isAdmin={isAdmin}
+            onStartCall={onStartCall}
+          />
         </div>
       </div>
 
       {/* RIGHT SIDE */}
-
       <div className="w-full lg:w-[30%] flex flex-col gap-4">
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Quick Links</h1>

@@ -58,6 +58,7 @@ CREATE TABLE "Doctor" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "gender" TEXT,
     "specialization" TEXT NOT NULL,
     "license_number" TEXT NOT NULL,
     "phone" TEXT NOT NULL,
@@ -138,7 +139,7 @@ CREATE TABLE "Payment" (
     "amount_paid" DOUBLE PRECISION NOT NULL,
     "payment_method" "PaymentMethod" NOT NULL DEFAULT 'CASH',
     "status" "PaymentStatus" NOT NULL DEFAULT 'UNPAID',
-    "receipt_number" SERIAL NOT NULL,
+    "receipt_number" INTEGER NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 

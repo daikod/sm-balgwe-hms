@@ -3,7 +3,16 @@ import { redirect } from 'next/navigation'
 import db from '@/lib/db'
 import AppointmentCard from '@/components/AppointmentCard'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Appointment } from '@/types/appointment'
+
+/**
+ * Normalize Prisma Appointment records for UI components
+ * Converts id: number -> string (required by AppointmentCard)
+ */
+const normalizeAppointments = (appointments: any[]) =>
+  appointments.map((a) => ({
+    ...a,
+    id: String(a.id),
+  }))
 
 export default async function AdminAppointmentsPage() {
   const { userId } = await auth()
@@ -22,30 +31,39 @@ export default async function AdminAppointmentsPage() {
   }
 
   // Fetch all appointments
-  const scheduledAppointments = await db.appointment.findMany({
+  const scheduledAppointmentsRaw = await db.appointment.findMany({
     where: { status: 'SCHEDULED' },
     include: { patient: true, doctor: true },
     orderBy: { appointment_date: 'asc' }
   })
 
-  const inProgressAppointments = await db.appointment.findMany({
+  const inProgressAppointmentsRaw = await db.appointment.findMany({
     where: { status: 'IN_PROGRESS' },
     include: { patient: true, doctor: true },
     orderBy: { appointment_date: 'asc' }
   })
 
-  const completedAppointments = await db.appointment.findMany({
+  const completedAppointmentsRaw = await db.appointment.findMany({
     where: { status: 'COMPLETED' },
     include: { patient: true, doctor: true },
     orderBy: { appointment_date: 'desc' },
     take: 20
   })
 
+  // ✅ Normalize IDs for UI
+  const scheduledAppointments = normalizeAppointments(scheduledAppointmentsRaw)
+  const inProgressAppointments = normalizeAppointments(inProgressAppointmentsRaw)
+  const completedAppointments = normalizeAppointments(completedAppointmentsRaw)
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Appointment Management</h1>
-        <p className="text-gray-600">Monitor and manage all telehealth consultations</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Appointment Management
+        </h1>
+        <p className="text-gray-600">
+          Monitor and manage all telehealth consultations
+        </p>
       </div>
 
       <Tabs defaultValue="scheduled" className="w-full">
@@ -72,7 +90,7 @@ export default async function AdminAppointmentsPage() {
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
-                  userRole="ADMIN"
+                  userRole="DOCTOR"
                 />
               ))}
             </div>
@@ -90,7 +108,7 @@ export default async function AdminAppointmentsPage() {
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
-                  userRole="ADMIN"
+                  userRole="DOCTOR"
                 />
               ))}
             </div>
@@ -104,11 +122,11 @@ export default async function AdminAppointmentsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {completedAppointments.map((appointment)=> (
+              {completedAppointments.map((appointment) => (
                 <AppointmentCard
                   key={appointment.id}
                   appointment={appointment}
-                  userRole="ADMIN"
+                  userRole="DOCTOR"
                 />
               ))}
             </div>

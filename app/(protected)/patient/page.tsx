@@ -1,156 +1,85 @@
+// Import necessary types
+import { Appointment, DoctorInfo } from '@/types/appointment';  // Ensure correct import
+import { currentUser } from '@clerk/nextjs/server';  // Clerk server-side import
+import { redirect } from 'next/navigation';
+import { getPatientById, getPatientDashboardStatistics } from '@/utils/services/patient';  // Make sure these are imported
+import { PatientDashboardClient } from './PatientDashboardClient'; // A separate client-side component
+import { getDoctors } from "@/utils/services/doctor"
 
+const PatientDashboardServer = async () => {
+  const user = await currentUser();  // Server-side Clerk logic
+  if (!user?.id) redirect('/sign-in');
 
-import React from "react";
-import { AvailableDoctors } from "@/components/available-doctor";
-import { AppointmentChart } from "@/components/charts/appointment-chart";
-import { StatSummary } from "@/components/charts/stat-summary";
-import { PatientRatingContainer } from "@/components/patient-rating-container";
-import { StatCard } from "@/components/stat-card";
-import { RecentAppointments } from "@/components/tables/recent-appointment";
-import { Button } from "@/components/ui/button";
-import { Appointment, DoctorInfo } from "@/types/appointment";
-import { getPatientDashboardStatistics, getPatientById } from "@/utils/services/patient";
-import { getDoctors } from "@/utils/services/doctor";
-import { currentUser } from "@clerk/nextjs/server";
-import { Briefcase, BriefcaseBusiness, BriefcaseMedical } from "lucide-react";
-import Link from "next/link";
-import { redirect } from "next/navigation";
-import { BookAppointmentButton } from "@/components/patient/book-appointment-button";
-
-
-const PatientDashboard = async () => {
-  const user = await currentUser();
-  if (!user?.id) redirect("/sign-in");
-
-  const { data: patientData } = await getPatientById(user.id);
-  const { data: doctors = [] } = await getDoctors(); // Prisma doctors
-  const { data, appointmentCounts, last5Records, totalAppointments, monthlyData } =
-    await getPatientDashboardStatistics(user.id);
+  // Fetch data server-side
+  const { data: patientData } = await getPatientById(user.id);  // Ensure this function is correctly imported
+  const { data: doctors = [] } = await getDoctors();  // Ensure this function is correctly imported
+  const { data, appointmentCounts, last5Records, totalAppointments, monthlyData } = await getPatientDashboardStatistics(user.id);  // Ensure this function is correctly imported
 
   if (!data || !patientData) return null;
 
-  // Map last 5 appointments
+  // Extract necessary plain data from user and patientData
+  const plainUserData = {
+    id: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.primaryEmailAddressId,
+    imageUrl: user.imageUrl,
+  };
+
+  const plainPatientData = {
+  id: patientData.id,
+  address: patientData.address || '',
+  img: patientData.img || null,
+  first_name: patientData.first_name,
+  last_name: patientData.last_name,
+  date_of_birth: patientData.date_of_birth,
+  gender: patientData.gender,
+  phone: patientData.phone,
+  email: patientData.email,
+  marital_status: patientData.marital_status,
+  emergency_contact_name: patientData.emergency_contact_name,
+  emergency_contact_number: patientData.emergency_contact_number,
+  relation: patientData.relation,
+  blood_group: patientData.blood_group,
+  allergies: patientData.allergies,
+  medical_conditions: patientData.medical_conditions,
+  medical_history: patientData.medical_history,
+  insurance_provider: patientData.insurance_provider,
+  insurance_number: patientData.insurance_number,
+  privacy_consent: patientData.privacy_consent,
+  service_consent: patientData.service_consent,
+  medical_consent: patientData.medical_consent,
+  colorCode: patientData.colorCode,
+  created_at: patientData.created_at,
+  updated_at: patientData.updated_at,
+};
+
+
   const mappedAppointments: Appointment[] = last5Records.map((a: any) => ({
     id: a.id,
-    roomID: a.roomID || "",
+    roomID: a.roomID || '',
     appointment_date: a.appointment_date,
     time: a.time,
-    status: a.status as Appointment["status"],
+    status: a.status as Appointment['status'],
     duration: a.duration || 0,
-    type: (a.type as Appointment["type"]) || "PHYSICAL",
-    patient: a.patient
-      ? {
-          id: a.patient.id,
-          first_name: a.patient.first_name,
-          last_name: a.patient.last_name,
-          gender: a.patient.gender,
-          img: a.patient.img || null,
-          colorCode: a.patient.colorCode || null,
-        }
-      : null,
-    doctor: a.doctor
-      ? {
-          id: a.doctor.id,
-          name: a.doctor.name,
-          specialization: a.doctor.specialization,
-          img: a.doctor.img || null,
-          colorCode: a.doctor.colorCode || null,
-        } as DoctorInfo
-      : null,
+    type: (a.type as Appointment['type']) || 'PHYSICAL',
+    patient: a.patient ? { ...a.patient, colorCode: a.patient.colorCode || null } : null,
+    doctor: a.doctor ? ({ ...a.doctor, colorCode: a.doctor.colorCode || null } as DoctorInfo) : null,
   }));
 
-  const cardData = [
-    {
-      title: "appointments",
-      value: totalAppointments,
-      icon: Briefcase,
-      className: "bg-blue-600/15",
-      iconClassName: "bg-blue-600/25 text-blue-600",
-      note: "Total appointments",
-    },
-    {
-      title: "cancelled",
-      value: appointmentCounts?.CANCELLED || 0,
-      icon: Briefcase,
-      className: "bg-rose-600/15",
-      iconClassName: "bg-rose-600/25 text-rose-600",
-      note: "Cancelled Appointments",
-    },
-    {
-      title: "pending",
-      value:
-        (appointmentCounts?.PENDING || 0) +
-        (appointmentCounts?.SCHEDULED || 0),
-      icon: BriefcaseBusiness,
-      className: "bg-yellow-600/15",
-      iconClassName: "bg-yellow-600/25 text-yellow-600",
-      note: "Pending Appointments",
-    },
-    {
-      title: "completed",
-      value: appointmentCounts?.COMPLETED || 0,
-      icon: BriefcaseMedical,
-      className: "bg-emerald-600/15",
-      iconClassName: "bg-emerald-600/25 text-emerald-600",
-      note: "Completed Appointments",
-    },
-  ];
-
+  // Pass the serialized plain data to the client-side component
   return (
-    <div className="py-6 px-3 flex flex-col rounded-xl xl:flex-row gap-6">
-      {/* LEFT */}
-      <div className="w-full xl:w-[69%]">
-        <div className="bg-white rounded-xl p-4 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-lg xl:text-2xl font-semibold">
-              Welcome {data.first_name || user.firstName}
-            </h1>
-
-            <div className="space-x-2 flex items-center">
-              {/* Book Appointment Button */}
-              <BookAppointmentButton patientData={patientData} doctors={doctors} />
-
-              <Button size="sm">{new Date().getFullYear()}</Button>
-              <Button size="sm" variant="outline" className="hover:underline">
-                <Link href="/patient/self">View Profile</Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="w-full flex flex-wrap gap-5">
-            {cardData.map((el, idx) => (
-              <StatCard key={idx} {...el} link="#" />
-            ))}
-          </div>
-        </div>
-
-        <div className="h-125">
-          <AppointmentChart
-            data={[
-              { name: "Jan", appointment: 12, completed: 8 },
-              { name: "Feb", appointment: 20, completed: 15 },
-            ]}
-          />
-
-        </div>
-
-        <div className="bg-white rounded-xl p-4 mt-8">
-          <RecentAppointments data={mappedAppointments} />
-        </div>
-      </div>
-
-      {/* RIGHT */}
-      <div className="w-full xl:w-[30%]">
-        <div className="w-full h-112.5 mb-8">
-          <StatSummary data={appointmentCounts} total={totalAppointments} />
-        </div>
-
-        <AvailableDoctors data={doctors} />
-
-        <PatientRatingContainer />
-      </div>
-    </div>
+    <PatientDashboardClient
+      user={plainUserData} 
+      patientData={plainPatientData} 
+      doctors={doctors} 
+      data={data}
+      appointmentCounts={appointmentCounts} 
+      last5Records={mappedAppointments} 
+      totalAppointments={totalAppointments} 
+      monthlyData={monthlyData}
+    />
   );
 };
 
-export default PatientDashboard;
+export default PatientDashboardServer;

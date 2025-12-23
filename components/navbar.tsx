@@ -9,11 +9,10 @@ export const Navbar = () => {
   const user = useUser();
   const pathname = usePathname();
   const [path, setPath] = useState("Overview"); // Default value for SSR
-  const [mounted, setMounted] = useState(false); // Add mounted state
+  const [mounted, setMounted] = useState(false); // Track hydration
 
   useEffect(() => {
-    setMounted(true); // Set mounted after client hydration
-    // Only run on client side after hydration
+    setMounted(true); // Component mounted
     if (pathname) {
       const splitRoute = pathname.split("/");
       const lastIndex = splitRoute.length - 1 > 2 ? 2 : splitRoute.length - 1;
@@ -32,12 +31,13 @@ export const Navbar = () => {
       <div className='flex items-center gap-4'>
         <div className='relative'>
           <Bell />
-          <p className='absolute -top-3 right-1 size-4 bg-red-600 text-white rounded-full text-[10px] text-center'>
+          <p className='absolute -top-3 right-1 w-4 h-4 bg-red-600 text-white rounded-full text-[10px] text-center'>
             2
           </p>
         </div>
 
-        {user?.user && <UserButton />}
+        {/* Render UserButton only after client mount */}
+        {mounted && user?.user && <UserButton />}
       </div>
     </div>
   );

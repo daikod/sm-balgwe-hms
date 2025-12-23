@@ -1,7 +1,6 @@
 import db from "@/lib/db";
-import { getMonth, format, startOfYear, endOfMonth, isToday } from "date-fns";
+import { getMonth, format, startOfYear, endOfMonth } from "date-fns";
 import { daysOfWeek } from "..";
-
 
 type AppointmentStatus = "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
@@ -16,7 +15,6 @@ function isValidStatus(status: string): status is AppointmentStatus {
 
 const initializeMonthlyData = () => {
   const this_year = new Date().getFullYear();
-
   const months = Array.from(
     { length: getMonth(new Date()) + 1 },
     (_, index) => ({
@@ -31,14 +29,10 @@ const initializeMonthlyData = () => {
 export const processAppointments = async (appointments: Appointment[]) => {
   const monthlyData = initializeMonthlyData();
 
-  const appointmentCounts = appointments.reduce<
-    Record<AppointmentStatus, number>
-  >(
+  const appointmentCounts = appointments.reduce<Record<AppointmentStatus, number>>(
     (acc, appointment) => {
       const status = appointment.status;
-
       const appointmentDate = appointment?.appointment_date;
-
       const monthIndex = getMonth(appointmentDate);
 
       if (
@@ -46,16 +40,10 @@ export const processAppointments = async (appointments: Appointment[]) => {
         appointmentDate <= endOfMonth(new Date())
       ) {
         monthlyData[monthIndex].appointment += 1;
-
-        if (status === "COMPLETED") {
-          monthlyData[monthIndex].completed += 1;
-        }
+        if (status === "COMPLETED") monthlyData[monthIndex].completed += 1;
       }
 
-      // Grouping by status
-      if (isValidStatus(status)) {
-        acc[status] = (acc[status] || 0) + 1;
-      }
+      if (isValidStatus(status)) acc[status] = (acc[status] || 0) + 1;
 
       return acc;
     },
@@ -70,17 +58,9 @@ export const processAppointments = async (appointments: Appointment[]) => {
   return { appointmentCounts, monthlyData };
 };
 
-
-
 export async function getPatientDashboardStatistics(id: string) {
   try {
-    if (!id) {
-      return {
-        success: false,
-        message: "No data found",
-        data: null,
-      };
-    }
+    if (!id) return { success: false, message: "No data found", data: null };
 
     const data = await db.patient.findUnique({
       where: { id },
@@ -94,21 +74,14 @@ export async function getPatientDashboardStatistics(id: string) {
       },
     });
 
-    if (!data) {
-      return {
-        success: false,
-        message: "Patient data not found",
-        status: 200,
-        data: null,
-      };
-    }
+    if (!data) return { success: false, message: "Patient data not found", status: 200, data: null };
 
     const appointments = await db.appointment.findMany({
       where: { patient_id: data.id },
       include: {
         patient: {
           select: {
-            id: true, // ✅ include ID
+            id: true,
             first_name: true,
             last_name: true,
             gender: true,
@@ -118,7 +91,7 @@ export async function getPatientDashboardStatistics(id: string) {
         },
         doctor: {
           select: {
-            id: true, // ✅ include ID
+            id: true,
             name: true,
             img: true,
             specialization: true,
@@ -136,14 +109,10 @@ export async function getPatientDashboardStatistics(id: string) {
       orderBy: { appointment_date: "desc" },
     });
 
-    const { appointmentCounts, monthlyData } = await processAppointments(
-      appointments as any
-    );
-
+    const { appointmentCounts, monthlyData } = await processAppointments(appointments as any);
     const last5Records = appointments.slice(0, 5);
 
     const today = daysOfWeek[new Date().getDay()];
-
     const availableDoctor = await db.doctor.findMany({
       select: {
         id: true,
@@ -152,21 +121,12 @@ export async function getPatientDashboardStatistics(id: string) {
         img: true,
         colorCode: true,
         working_days: {
-          select: {
-            day: true,
-            start_time: true,
-            close_time: true,
-          },
+          select: { day: true, start_time: true, close_time: true },
         },
       },
       where: {
         working_days: {
-          some: {
-            day: {
-              equals: today,
-              mode: "insensitive",
-            },
-          },
+          some: { day: { equals: today, mode: "insensitive" } },
         },
       },
       take: 4,
@@ -188,22 +148,10 @@ export async function getPatientDashboardStatistics(id: string) {
   }
 }
 
-
 export async function getPatientById(id: string) {
   try {
-    const patient = await db.patient.findUnique({
-      where: { id },
-    });
-
-    if (!patient) {
-      return {
-        success: false,
-        message: "Patient data not found",
-        status: 404,
-        data: null,
-      };
-    }
-
+    const patient = await db.patient.findUnique({ where: { id } });
+    if (!patient) return { success: false, message: "Patient data not found", status: 404, data: null };
     return { success: true, data: patient, status: 200 };
   } catch (error) {
     console.log(error);
@@ -214,48 +162,19 @@ export async function getPatientById(id: string) {
 export async function getPatientFullDataById(id: string) {
   try {
     const patient = await db.patient.findFirst({
-      where: {
-        OR: [
-          {
-            id,
-          },
-          { email: id },
-        ],
-      },
+      where: { OR: [{ id }, { email: id }] },
       include: {
-        _count: {
-          select: {
-            appointments: true,
-          },
-        },
-        appointments: {
-          select: {
-            appointment_date: true,
-          },
-          orderBy: {
-            appointment_date: "desc",
-          },
-          take: 1,
-        },
+        _count: { select: { appointments: true } },
+        appointments: { select: { appointment_date: true }, orderBy: { appointment_date: "desc" }, take: 1 },
       },
     });
 
-    if (!patient) {
-      return {
-        success: false,
-        message: "Patient data not found",
-        status: 404,
-      };
-    }
+    if (!patient) return { success: false, message: "Patient data not found", status: 404 };
     const lastVisit = patient.appointments[0]?.appointment_date || null;
 
     return {
       success: true,
-      data: {
-        ...patient,
-        totalAppointments: patient._count.appointments,
-        lastVisit,
-      },
+      data: { ...patient, totalAppointments: patient._count.appointments, lastVisit },
       status: 200,
     };
   } catch (error) {
@@ -264,19 +183,10 @@ export async function getPatientFullDataById(id: string) {
   }
 }
 
-export async function getAllPatients({
-  page,
-  limit,
-  search,
-}: {
-  page: number | string;
-  limit?: number | string;
-  search?: string;
-}) {
+export async function getAllPatients({ page, limit, search }: { page: number | string; limit?: number | string; search?: string }) {
   try {
     const PAGE_NUMBER = Number(page) <= 0 ? 1 : Number(page);
     const LIMIT = Number(limit) || 10;
-
     const SKIP = (PAGE_NUMBER - 1) * LIMIT;
 
     const [patients, totalRecords] = await Promise.all([
@@ -292,11 +202,7 @@ export async function getAllPatients({
         include: {
           appointments: {
             select: {
-              medical: {
-                select: { created_at: true, treatment_plan: true },
-                orderBy: { created_at: "desc" },
-                take: 1,
-              },
+              medical: { select: { created_at: true, treatment_plan: true }, orderBy: { created_at: "desc" }, take: 1 },
             },
             orderBy: { appointment_date: "desc" },
             take: 1,
@@ -310,17 +216,70 @@ export async function getAllPatients({
     ]);
 
     const totalPages = Math.ceil(totalRecords / LIMIT);
-
-    return {
-      success: true,
-      data: patients,
-      totalRecords,
-      totalPages,
-      currentPage: PAGE_NUMBER,
-      status: 200,
-    };
+    return { success: true, data: patients, totalRecords, totalPages, currentPage: PAGE_NUMBER, status: 200 };
   } catch (error) {
     console.log(error);
     return { success: false, message: "Internal Server Error", status: 500 };
   }
 }
+
+/* -----------------------------
+   Create Patient
+------------------------------- */
+export async function createPatient(data: any) {
+  try {
+    const patient = await db.patient.upsert({
+      where: { email: data.email }, // use email as unique key
+      update: {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        date_of_birth: data.date_of_birth,
+        gender: data.gender,
+        phone: data.phone,
+        marital_status: data.marital_status,
+        address: data.address,
+        emergency_contact_name: data.emergency_contact_name,
+        emergency_contact_number: data.emergency_contact_number,
+        relation: data.relation,
+        blood_group: data.blood_group,
+        allergies: data.allergies,
+        medical_conditions: data.medical_conditions,
+        medical_history: data.medical_history,
+        insurance_provider: data.insurance_provider,
+        insurance_number: data.insurance_number,
+        privacy_consent: data.privacy_consent,
+        service_consent: data.service_consent,
+        medical_consent: data.medical_consent,
+      },
+      create: {
+        id: data.id, // Clerk user ID
+        first_name: data.first_name,
+        last_name: data.last_name,
+        date_of_birth: data.date_of_birth,
+        gender: data.gender,
+        phone: data.phone,
+        email: data.email,
+        marital_status: data.marital_status,
+        address: data.address,
+        emergency_contact_name: data.emergency_contact_name,
+        emergency_contact_number: data.emergency_contact_number,
+        relation: data.relation,
+        blood_group: data.blood_group,
+        allergies: data.allergies,
+        medical_conditions: data.medical_conditions,
+        medical_history: data.medical_history,
+        insurance_provider: data.insurance_provider,
+        insurance_number: data.insurance_number,
+        privacy_consent: data.privacy_consent,
+        service_consent: data.service_consent,
+        medical_consent: data.medical_consent,
+      },
+    });
+
+    return { success: true, data: patient };
+  } catch (err: any) {
+    console.error(err);
+    return { success: false, message: err.message || "Failed to create patient" };
+  }
+}
+

@@ -1,134 +1,127 @@
-'use client'
+'use client';
 
-import { Video, Calendar, Clock, User } from 'lucide-react'
-import Link from 'next/link'
-import { format } from 'date-fns'
-import type { Appointment } from "@/types/appointment";
+import { useRouter } from 'next/navigation';
 
 interface AppointmentCardProps {
-    appointment: Appointment;
-    userRole: "PATIENT" | "DOCTOR" | "ADMIN";
-  }
-  
+  appointment: {
+    id: string;
+    type: 'VIDEO' | 'PHYSICAL';
+    status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'PENDING' | 'CANCELLED';
+    roomID?: string;
+    appointment_date: string | Date;
+    patient?: {
+      first_name: string;
+      last_name: string;
+      img?: string | null;
+    };
+  };
+  userRole: 'DOCTOR' | 'PATIENT';
+  showVideoButton?: boolean;
+}
 
+export default function AppointmentCard({
+  appointment,
+  userRole,
+  showVideoButton = true,
+}: AppointmentCardProps) {
+  const router = useRouter();
 
-export default function AppointmentCard({ appointment, userRole }: AppointmentCardProps) {
-  const canJoinMeeting = appointment.status === 'SCHEDULED' || appointment.status === 'IN_PROGRESS'
-  const isUpcoming = new Date(appointment.appointment_date) >= new Date()
+  const appointmentType = appointment.type;
+  const appointmentStatus = appointment.status;
+  const roomID = appointment.roomID || '';
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'SCHEDULED':
-        return 'bg-blue-100 text-blue-800'
-      case 'IN_PROGRESS':
-        return 'bg-green-100 text-green-800'
-      case 'COMPLETED':
-        return 'bg-gray-100 text-gray-800'
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-yellow-100 text-yellow-800'
+  const startConsultation = async () => {
+    const res = await fetch('/api/appointments/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointmentId: appointment.id }),
+    });
+
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (data.roomID) {
+      router.push(`/meeting/${data.roomID}`);
     }
-  }
+  };
+
+  const patientName = appointment.patient
+    ? `${appointment.patient.first_name} ${appointment.patient.last_name}`
+    : 'Patient';
+
+  const formattedDate = new Date(
+    appointment.appointment_date
+  ).toLocaleString();
+
+  const canDoctorStartVideo =
+    showVideoButton &&
+    userRole === 'DOCTOR' &&
+    appointmentType === 'VIDEO' &&
+    appointmentStatus === 'SCHEDULED';
+
+  const canDoctorRejoin =
+    showVideoButton &&
+    userRole === 'DOCTOR' &&
+    appointmentStatus === 'IN_PROGRESS' &&
+    roomID;
+
+  const canPatientJoin =
+    showVideoButton &&
+    userRole === 'PATIENT' &&
+    roomID;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          {userRole === 'PATIENT' && appointment.doctor && (
-            <>
-              {appointment.doctor.img ? (
-                <img
-                  src={appointment.doctor.img}
-                  alt={appointment.doctor.name}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {appointment.doctor.name.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h3 className="font-semibold text-gray-900">{appointment.doctor.name}</h3>
-                <p className="text-sm text-gray-600">{appointment.doctor.specialization}</p>
-              </div>
-            </>
-          )}
-
-          {(userRole === 'DOCTOR' || userRole === 'ADMIN') && appointment.patient && (
-            <>
-              {appointment.patient.img ? (
-                <img
-                  src={appointment.patient.img}
-                  alt={`${appointment.patient.first_name} ${appointment.patient.last_name}`}
-                  className="w-12 h-12 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center">
-                  <span className="text-white font-semibold text-lg">
-                    {appointment.patient.first_name.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <div>
-                <h3 className="font-semibold text-gray-900">
-                  {appointment.patient.first_name} {appointment.patient.last_name}
-                </h3>
-                <p className="text-sm text-gray-600">Patient</p>
-              </div>
-            </>
-          )}
-        </div>
-
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-          {appointment.status}
-        </span>
+    <div className="rounded-lg border p-4 bg-white shadow-sm">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">{patientName}</h3>
+        {appointment.patient?.img && (
+          <img
+            src={appointment.patient.img}
+            className="w-8 h-8 rounded-full"
+            alt={patientName}
+          />
+        )}
       </div>
 
-      <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Calendar className="w-4 h-4" />
-          <span>{format(new Date(appointment.appointment_date), 'EEEE, MMMM d, yyyy')}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Clock className="w-4 h-4" />
-          <span>{appointment.time} ({appointment.duration} mins)</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <User className="w-4 h-4" />
-          <span>{appointment.type}</span>
-        </div>
-      </div>
+      <p className="text-sm text-gray-600 mt-2">{formattedDate}</p>
 
-      {canJoinMeeting && isUpcoming && (
-        <Link
-          href={`/meeting/${appointment.roomID}`}
-          className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+      {canDoctorStartVideo && (
+        <button
+          type="button"
+          onClick={startConsultation}
+          className="mt-4 w-full bg-blue-600 text-white py-2 rounded"
         >
-          <Video className="w-5 h-5" />
+          Start Video Consultation
+        </button>
+      )}
+
+      {canDoctorRejoin && (
+        <button
+          type="button"
+          onClick={() => router.push(`/meeting/${roomID}`)}
+          className="mt-4 w-full bg-green-600 text-white py-2 rounded"
+        >
+          Rejoin Consultation
+        </button>
+      )}
+
+      {canPatientJoin && (
+        <button
+          type="button"
+          onClick={() => router.push(`/meeting/${roomID}`)}
+          className="mt-4 w-full bg-green-600 text-white py-2 rounded"
+        >
           Join Video Consultation
-        </Link>
-      )}
-
-      {!isUpcoming && appointment.status === 'COMPLETED' && (
-        <button
-          disabled
-          className="w-full flex items-center justify-center gap-2 bg-gray-200 text-gray-500 py-2.5 rounded-lg cursor-not-allowed font-medium"
-        >
-          Consultation Completed
         </button>
       )}
 
-      {appointment.status === 'CANCELLED' && (
-        <button
-          disabled
-          className="w-full flex items-center justify-center gap-2 bg-red-100 text-red-600 py-2.5 rounded-lg cursor-not-allowed font-medium"
-        >
-          Consultation Cancelled
-        </button>
-      )}
+      {userRole === 'PATIENT' &&
+        appointmentType === 'VIDEO' &&
+        !roomID && (
+          <p className="mt-4 text-sm text-gray-500">
+            Waiting for doctor to start consultation
+          </p>
+        )}
     </div>
-  )
+  );
 }

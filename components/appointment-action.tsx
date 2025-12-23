@@ -1,19 +1,19 @@
 "use client";
 
-import { AppointmentStatus } from "@prisma/client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { useRouter } from "next/navigation";
 import { appointmentAction } from "@/app/actions/appointment";
+import { AppointmentStatus } from "@prisma/client";
 
-interface ActionProps {
+interface Props {
   id: string | number;
-  status: AppointmentStatus; // ✅ FIX
+  status: AppointmentStatus;
 }
 
-export const AppointmentAction = ({ id, status }: ActionProps) => {
+export const AppointmentAction = ({ id, status }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState<AppointmentStatus | null>(null);
   const [reason, setReason] = useState("");
@@ -26,8 +26,7 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
       setIsLoading(true);
 
       const newReason =
-        reason ||
-        `Appointment has been ${selected.toLowerCase()} on ${new Date()}`;
+        reason || `Appointment has been ${selected.toLowerCase()} on ${new Date()}`;
 
       const resp = await appointmentAction(id, selected, newReason);
 
@@ -37,8 +36,8 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
       } else {
         toast.error(resp.msg);
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       toast.error("Something went wrong. Try again later.");
     } finally {
       setIsLoading(false);
@@ -48,37 +47,20 @@ export const AppointmentAction = ({ id, status }: ActionProps) => {
   return (
     <div>
       <div className="flex items-center space-x-3">
-        <Button
-          variant="outline"
-          disabled={status === AppointmentStatus.PENDING || isLoading || status === AppointmentStatus.COMPLETED}
-          onClick={() => setSelected(AppointmentStatus.PENDING)}
-        >
-          Pending
-        </Button>
-
-        <Button
-          variant="outline"
-          disabled={status === AppointmentStatus.SCHEDULED || isLoading || status === AppointmentStatus.COMPLETED}
-          onClick={() => setSelected(AppointmentStatus.SCHEDULED)}
-        >
-          Approve
-        </Button>
-
-        <Button
-          variant="outline"
-          disabled={status === AppointmentStatus.COMPLETED || isLoading}
-          onClick={() => setSelected(AppointmentStatus.COMPLETED)}
-        >
-          Completed
-        </Button>
-
-        <Button
-          variant="outline"
-          disabled={status === AppointmentStatus.CANCELLED || isLoading || status === AppointmentStatus.COMPLETED}
-          onClick={() => setSelected(AppointmentStatus.CANCELLED)}
-        >
-          Cancel
-        </Button>
+        {Object.values(AppointmentStatus).map((statusOption) => (
+          <Button
+            key={statusOption}
+            variant="outline"
+            disabled={
+              isLoading ||
+              status === AppointmentStatus.COMPLETED ||
+              status === AppointmentStatus.CANCELLED
+            }
+            onClick={() => setSelected(statusOption)}
+          >
+            {statusOption}
+          </Button>
+        ))}
       </div>
 
       {selected === AppointmentStatus.CANCELLED && (

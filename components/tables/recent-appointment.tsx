@@ -1,52 +1,39 @@
-import Link from "next/link";
+"use client";
+
 import React from "react";
-import { Button } from "../ui/button";
-import { Table } from "./table";
 import { Appointment } from "@/types/appointment";
 import { ProfileImage } from "@/components/profile-image";
 import { format } from "date-fns";
 import { AppointmentStatusIndicator } from "@/components/appointment-status-indicator";
 import ViewAppointmentDialog from "@/components/view-appointment-dialog";
-import { auth } from "@clerk/nextjs/server";
-import { checkRole } from "@/utils/roles";
+import Link from "next/link";
+import { Button } from "../ui/button";
 
 interface DataProps {
   data: Appointment[];
+  userId: string;
+  isAdmin: boolean;
+  onStartCall: (appointmentId: string, patientEmail: string) => Promise<void>;
 }
 
-const columns = [
-  { header: "Info", key: "name" },
-  { header: "Date", key: "appointment_date", className: "hidden md:table-cell" },
-  { header: "Time", key: "time", className: "hidden md:table-cell" },
-  { header: "Doctor", key: "doctor", className: "hidden md:table-cell" },
-  { header: "Status", key: "status", className: "hidden xl:table-cell" },
-  { header: "Actions", key: "action" },
-];
-
-export const RecentAppointments = async ({ data }: DataProps) => {
-  const { userId } = await auth();
-  const isAdmin = await checkRole("ADMIN");
-
-  // ✅ Normalize doctor.gender null → undefined
-  const normalizedData = data.map((item) => ({
-    ...item,
-    doctor: item.doctor
-      ? {
-          ...item.doctor,
-          gender: item.doctor.gender ?? undefined,
-        }
-      : undefined,
-  }));
-
+export const RecentAppointments = ({
+  data,
+  userId,
+  isAdmin,
+  onStartCall,
+}: DataProps) => {
   const renderRow = (item: Appointment) => {
     const patientName =
       (item.patient?.first_name ?? "") + " " + (item.patient?.last_name ?? "");
     const doctorName = item.doctor?.name ?? "";
     const patientImg = item.patient?.img ?? "";
     const doctorImg = item.doctor?.img ?? "";
-    const patientBgColor = (item.patient as any)?.colorCode ?? "bg-gray-400";
-    const doctorBgColor = (item.doctor as any)?.colorCode ?? "bg-gray-400";
+    const patientBgColor = item.patient?.colorCode ?? "bg-gray-400";
+    const doctorBgColor = item.doctor?.colorCode ?? "bg-gray-400";
     const patientGender = item.patient?.gender?.toLowerCase() ?? "";
+
+    // Check if email exists in patient data
+    const patientEmail = item.patient?.email ?? ""; // Default to empty string if email is missing
 
     return (
       <tr
@@ -66,7 +53,7 @@ export const RecentAppointments = async ({ data }: DataProps) => {
           </div>
         </td>
 
-        <td className="hidden md:table-cell">{format(item.appointment_date, "yyyy-MM-dd")}</td>
+        <td className="hidden md:table-cell">{format(new Date(item.appointment_date), "yyyy-MM-dd")}</td>
         <td className="hidden md:table-cell">{item.time}</td>
         <td className="hidden md:table-cell items-center py-2">
           <div className="flex items-center gap-2 2xl:gap-4">
@@ -92,6 +79,13 @@ export const RecentAppointments = async ({ data }: DataProps) => {
           <div className="flex items-center gap-x-2">
             <ViewAppointmentDialog data={item} userId={userId} isAdmin={isAdmin} />
             <Link href={`/record/appointments/${item.id}`}>See all</Link>
+            {/* Add Start Call Button */}
+            <button
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md"
+              onClick={() => onStartCall(item.id.toString(), patientEmail)} // Convert id to string here
+            >
+              Start Call
+            </button>
           </div>
         </td>
       </tr>
@@ -100,14 +94,28 @@ export const RecentAppointments = async ({ data }: DataProps) => {
 
   return (
     <div className="bg-white rounded-xl p-2 2xl:p-4">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-2">
         <h1 className="text-lg font-semibold">Recent Appointments</h1>
-        <Button asChild variant={"outline"}>
+        <Button asChild variant="outline" size="sm">
           <Link href="/record/appointments">View All</Link>
         </Button>
       </div>
 
-      <Table columns={columns} renderRow={renderRow} data={normalizedData} />
+      <table className="w-full table-auto border-collapse">
+        <thead>
+          <tr>
+            <th>Info</th>
+            <th className="hidden md:table-cell">Date</th>
+            <th className="hidden md:table-cell">Time</th>
+            <th className="hidden md:table-cell">Doctor</th>
+            <th className="hidden xl:table-cell">Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map(renderRow)}
+        </tbody>
+      </table>
     </div>
   );
 };

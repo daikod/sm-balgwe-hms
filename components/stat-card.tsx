@@ -9,16 +9,15 @@ import { formatNumber } from "@/utils";
 interface CardProps {
   title: string;
   icon: LucideIcon;
-  note: string;
+  note?: string;
   value: number;
   className?: string;
   iconClassName?: string;
-  link: string;
+  link?: string; // made optional
 }
 
-const CardIcon = ({ icon: Icon }: { icon: LucideIcon }) => {
-  return <Icon />;
-};
+const CardIcon = ({ icon: Icon }: { icon: LucideIcon }) => <Icon />;
+
 export const StatCard = ({
   title,
   icon,
@@ -32,14 +31,16 @@ export const StatCard = ({
     <Card className={cn("w-full md:w-82.5 2xl:w-62.5", className)}>
       <CardHeader className="flex flex-row items-center justify-between py-3 capitalize">
         <h3>{title}</h3>
-        <Button
-          asChild
-          size="sm"
-          variant="outline"
-          className="font-normal text-xs bg-transparent p-2 h-0 hover:underline"
-        >
-          <Link href={link}>See details</Link>
-        </Button>
+        {link && (
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="font-normal text-xs bg-transparent p-2 h-0 hover:underline"
+          >
+            <Link href={link}>See details</Link>
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent>
@@ -52,16 +53,15 @@ export const StatCard = ({
           >
             <CardIcon icon={icon} />
           </div>
-
-          <h2 className="text-2xl 2xl:text-3xl font-semibold">
-            {formatNumber(value)}
-          </h2>
+          <h2 className="text-2xl 2xl:text-3xl font-semibold">{formatNumber(value)}</h2>
         </div>
       </CardContent>
 
-      <CardFooter className="pb-3">
-        <p className="text-sm text-gray-500">{note}</p>
-      </CardFooter>
+      {note && (
+        <CardFooter className="pb-3">
+          <p className="text-sm text-gray-500">{note}</p>
+        </CardFooter>
+      )}
     </Card>
   );
 };

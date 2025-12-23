@@ -1,45 +1,26 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-// @ts-ignore: side-effect import without type declarations for CSS
+// @ts-ignore
 import "./globals.css";
-import { ClerkProvider } from "@clerk/nextjs"
-import { Toaster } from "sonner"
-import { ThemeProvider } from "@/components/theme-provider";
-import { useTheme } from "next-themes";
+import { Providers } from "@/components/providers";
+import { ClerkProvider } from "@clerk/nextjs";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SM BALGWE HMS",
   description: "Built by Dr Philip Ikeme",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning={true}>
-      <body className={`--webkit-font-smoothing: antialiased`}>
-        <ThemeProvider attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange>
-        <ClerkProvider>
-        {children}
-        <Toaster richColors position="top-center" />
-        </ClerkProvider>
-        </ThemeProvider>
+    <html lang="en" suppressHydrationWarning>
+      <ClerkProvider>
+      <body className="--webkit-font-smoothing: antialiased">
+        <Providers>{children}</Providers>
       </body>
+      </ClerkProvider>
     </html>
   );
 }

@@ -1,19 +1,22 @@
 // app/(protected)/admin/page.tsx
-// ❌ REMOVE "use client"
+// ✅ Server Component — NO "use client"
 
-import { AvailableDoctors } from "@/components/available-doctor";
 import { AppointmentChart } from "@/components/charts/appointment-chart";
 import { StatSummary } from "@/components/charts/stat-summary";
 import { StatCard } from "@/components/stat-card";
 import { RecentAppointments } from "@/components/tables/recent-appointment";
 import { Button } from "@/components/ui/button";
 import { getAdminDashboardStats } from "@/utils/services/admin";
-import { BriefcaseBusiness, BriefcaseMedical, User, Users } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  BriefcaseMedical,
+  User,
+  Users,
+} from "lucide-react";
 import React from "react";
 
 const AdminDashboard = async () => {
   const {
-    availableDoctors,
     last10Records,
     appointmentCounts,
     monthlyData,
@@ -22,10 +25,36 @@ const AdminDashboard = async () => {
     totalAppointments,
   } = await getAdminDashboardStats();
 
+  /**
+   * ✅ Normalize data ONLY to satisfy UI contracts
+   * (No Prisma schema mutation)
+   */
+  const recentAppointments = (last10Records ?? []).map((a) => ({
+    ...a,
+    patient: a.patient
+      ? {
+          ...a.patient,
+          email: "", // required by RecentAppointments
+        }
+      : undefined,
+  }));
+
+  /**
+   * ✅ REQUIRED handler for RecentAppointments
+   * Admin dashboard does not initiate calls,
+   * but must satisfy the component contract.
+   */
+  const handleStartCall = async (
+    _appointmentId: string,
+    _patientEmail: string
+  ): Promise<void> => {
+    return;
+  };
+
   const cardData = [
     {
       title: "Patients",
-      value: totalPatient,
+      value: totalPatient ?? 0,
       icon: Users,
       className: "bg-blue-600/15",
       iconClassName: "bg-blue-600/25 text-blue-600",
@@ -34,7 +63,7 @@ const AdminDashboard = async () => {
     },
     {
       title: "Doctors",
-      value: totalDoctors,
+      value: totalDoctors ?? 0,
       icon: User,
       className: "bg-rose-600/15",
       iconClassName: "bg-rose-600/25 text-rose-600",
@@ -43,7 +72,7 @@ const AdminDashboard = async () => {
     },
     {
       title: "Appointments",
-      value: totalAppointments,
+      value: totalAppointments ?? 0,
       icon: BriefcaseBusiness,
       className: "bg-yellow-600/15",
       iconClassName: "bg-yellow-600/25 text-yellow-600",
@@ -52,7 +81,7 @@ const AdminDashboard = async () => {
     },
     {
       title: "Consultation",
-      value: appointmentCounts?.COMPLETED,
+      value: appointmentCounts?.COMPLETED ?? 0,
       icon: BriefcaseMedical,
       className: "bg-emerald-600/15",
       iconClassName: "bg-emerald-600/25 text-emerald-600",
@@ -68,17 +97,17 @@ const AdminDashboard = async () => {
         <div className="bg-white rounded-xl p-4 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-lg font-semibold">Statistics</h1>
-            <Button size={"sm"} variant={"outline"}>
+            <Button size="sm" variant="outline">
               {new Date().getFullYear()}
             </Button>
           </div>
 
-          <div className="w-full flex flex-wrap gap-5">
-            {cardData?.map((el, index) => (
+          <div className="flex flex-wrap gap-5">
+            {cardData.map((el, i) => (
               <StatCard
-                key={index}
+                key={i}
                 title={el.title}
-                value={el.value!}
+                value={el.value}
                 icon={el.icon}
                 className={el.className}
                 iconClassName={el.iconClassName}
@@ -90,23 +119,26 @@ const AdminDashboard = async () => {
         </div>
 
         <div className="h-125">
-          <AppointmentChart
-            data={[
-              { name: "Jan", appointment: 12, completed: 8 },
-              { name: "Feb", appointment: 20, completed: 15 },
-            ]}
-          />
+          <AppointmentChart data={monthlyData ?? []} />
         </div>
 
         <div className="bg-white rounded-xl p-4 mt-8">
-          <RecentAppointments data={last10Records!} />
+          <RecentAppointments
+            data={recentAppointments}
+            userId="admin"
+            isAdmin={true}
+            onStartCall={handleStartCall}
+          />
         </div>
       </div>
 
       {/* RIGHT */}
       <div className="w-full xl:w-[30%]">
         <div className="w-full h-112.5">
-          <StatSummary data={appointmentCounts} total={totalAppointments!} />
+          <StatSummary
+            data={appointmentCounts ?? {}}
+            total={totalAppointments ?? 0}
+          />
         </div>
       </div>
     </div>

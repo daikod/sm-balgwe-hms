@@ -1,66 +1,50 @@
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
-import db from '@/lib/db'
-import AppointmentCard from '@/components/AppointmentCard'
-import DoctorAppointmentsEmpty from '@/components/DoctorAppointmentsEmpty'
+// app/(protected)/doctor/appointments/page.tsx
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import {
+  getDoctorAppointments,
+  getDoctorDashboardStats,
+} from "@/utils/services/doctor";
+import { DoctorAppointmentsClient } from "./DoctorAppointmentsClient";
 
-export default async function DoctorAppointmentsPage() {
-  const { userId } = await auth()
+const DoctorAppointmentsPage = async () => {
+  const user = await currentUser();
+  if (!user?.id) redirect("/sign-in");
 
-  if (!userId) {
-    redirect('/sign-in')
-  }
+  const appointments = await getDoctorAppointments(user.id);
+  const stats = await getDoctorDashboardStats(user.id);
 
-  const appointments = await db.appointment.findMany({
-    where: {
-      doctor_id: userId,
-      status: {
-        in: ['SCHEDULED', 'IN_PROGRESS'],
-      },
-    },
-    include: {
-      patient: true,
-      doctor: true,
-    },
-    orderBy: {
-      appointment_date: 'asc',
-    },
-  })
+  const plainUser = {
+    id: user.id,
+    firstName: user.firstName ?? "Doctor",
+    lastName: user.lastName ?? "",
+    email: user.primaryEmailAddressId ?? "",
+    imageUrl: user.imageUrl ?? "",
+  };
+
+  // ✅ CANONICAL DTO
+  const mappedAppointments = appointments.map((a: any) => ({
+  id: String(a.id),
+  type: a.type ?? 'PHYSICAL',
+  status: a.status,
+  roomID: a.roomID || '',
+  appointment_date: a.appointment_date,
+  patient: a.patient
+    ? {
+        first_name: a.patient.first_name,
+        last_name: a.patient.last_name,
+        img: a.patient.img ?? null,
+      }
+    : undefined,
+}));
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          My Appointments
-        </h1>
-        <p className="text-gray-600">
-          Manage your upcoming consultations
-        </p>
-      </div>
+    <DoctorAppointmentsClient
+      user={plainUser}
+      stats={stats}
+      appointments={mappedAppointments}
+    />
+  );
+};
 
-      {appointments.length === 0 ? (
-        <DoctorAppointmentsEmpty />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {appointments.map((appointment: any) => (
-            <AppointmentCard
-              key={appointment.id}
-              appointment={{
-                ...appointment,
-                patient: {
-                  ...appointment.patient,
-                  img: appointment.patient.img ?? undefined,
-                },
-                doctor: {
-                  ...appointment.doctor,
-                  img: appointment.doctor.img ?? undefined,
-                },
-              }}
-              userRole="DOCTOR"
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+export default DoctorAppointmentsPage;
