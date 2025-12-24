@@ -11,11 +11,28 @@ export default async function DoctorDashboardPage() {
 
   // Fetch last 5 appointments for this doctor
   const appointments = await db.appointment.findMany({
-    where: { doctor_id: user.id }, // matches your schema
-    include: { patient: true },
+    where: { doctor_id: user.id },
     orderBy: { appointment_date: 'desc' },
     take: 5,
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      appointment_date: true,
+      roomID: true,
+      time: true,
+      duration: true,
+
+      patient: {
+        select: {
+          first_name: true,
+          last_name: true,
+          img: true,
+        },
+      },
+    },
   });
+
 
   // Compute appointment counts
   const appointmentCounts: Record<AppointmentStatus, number> = {

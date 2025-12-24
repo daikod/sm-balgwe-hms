@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 interface AppointmentCardProps {
   appointment: {
     id: string;
-    type: 'VIDEO' | 'PHYSICAL';
+    type: string; // ✅ future-proof
     status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'PENDING' | 'CANCELLED';
     roomID?: string;
     appointment_date: string | Date;
@@ -29,6 +29,8 @@ export default function AppointmentCard({
   const appointmentType = appointment.type;
   const appointmentStatus = appointment.status;
   const roomID = appointment.roomID || '';
+
+  const isVideoAppointment = appointmentType === 'VIDEO';
 
   const startConsultation = async () => {
     const res = await fetch('/api/appointments/start', {
@@ -56,19 +58,19 @@ export default function AppointmentCard({
   const canDoctorStartVideo =
     showVideoButton &&
     userRole === 'DOCTOR' &&
-    appointmentType === 'VIDEO' &&
+    isVideoAppointment &&
     appointmentStatus === 'SCHEDULED';
 
   const canDoctorRejoin =
     showVideoButton &&
     userRole === 'DOCTOR' &&
     appointmentStatus === 'IN_PROGRESS' &&
-    roomID;
+    !!roomID;
 
   const canPatientJoin =
     showVideoButton &&
     userRole === 'PATIENT' &&
-    roomID;
+    !!roomID;
 
   return (
     <div className="rounded-lg border p-4 bg-white shadow-sm">
@@ -115,13 +117,11 @@ export default function AppointmentCard({
         </button>
       )}
 
-      {userRole === 'PATIENT' &&
-        appointmentType === 'VIDEO' &&
-        !roomID && (
-          <p className="mt-4 text-sm text-gray-500">
-            Waiting for doctor to start consultation
-          </p>
-        )}
+      {userRole === 'PATIENT' && isVideoAppointment && !roomID && (
+        <p className="mt-4 text-sm text-gray-500">
+          Waiting for doctor to start consultation
+        </p>
+      )}
     </div>
   );
 }

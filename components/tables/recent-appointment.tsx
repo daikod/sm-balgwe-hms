@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Appointment } from "@/types/appointment";
-import { ProfileImage } from "@/components/profile-image";
-import { format } from "date-fns";
-import { AppointmentStatusIndicator } from "@/components/appointment-status-indicator";
-import ViewAppointmentDialog from "@/components/view-appointment-dialog";
-import Link from "next/link";
-import { Button } from "../ui/button";
+import React from 'react';
+import { Appointment } from '@/types/appointment';
+import { ProfileImage } from '@/components/profile-image';
+import { format } from 'date-fns';
+import { AppointmentStatusIndicator } from '@/components/appointment-status-indicator';
+import ViewAppointmentDialog from '@/components/view-appointment-dialog';
+import Link from 'next/link';
+import { Button } from '../ui/button';
 
 interface DataProps {
   data: Appointment[];
   userId: string;
   isAdmin: boolean;
-  onStartCall: (appointmentId: string, patientEmail: string) => Promise<void>;
+  onStartCall?: (appointmentId: string, patientEmail: string) => Promise<void>;
 }
 
 export const RecentAppointments = ({
@@ -24,16 +24,22 @@ export const RecentAppointments = ({
 }: DataProps) => {
   const renderRow = (item: Appointment) => {
     const patientName =
-      (item.patient?.first_name ?? "") + " " + (item.patient?.last_name ?? "");
-    const doctorName = item.doctor?.name ?? "";
-    const patientImg = item.patient?.img ?? "";
-    const doctorImg = item.doctor?.img ?? "";
-    const patientBgColor = item.patient?.colorCode ?? "bg-gray-400";
-    const doctorBgColor = item.doctor?.colorCode ?? "bg-gray-400";
-    const patientGender = item.patient?.gender?.toLowerCase() ?? "";
+      `${item.patient?.first_name ?? ''} ${item.patient?.last_name ?? ''}`.trim();
 
-    // Check if email exists in patient data
-    const patientEmail = item.patient?.email ?? ""; // Default to empty string if email is missing
+    const doctorName = item.doctor?.name ?? '';
+    const patientImg = item.patient?.img ?? '';
+    const doctorImg = item.doctor?.img ?? '';
+    const patientBgColor = item.patient?.colorCode ?? 'bg-gray-400';
+    const doctorBgColor = item.doctor?.colorCode ?? 'bg-gray-400';
+
+    const patientGender =
+      item.patient?.gender
+        ? String(item.patient.gender).toLowerCase()
+        : '';
+
+    const patientEmail = item.patient?.email ?? '';
+
+    const isVideoAppointment = item.type === 'VIDEO';
 
     return (
       <tr
@@ -43,30 +49,40 @@ export const RecentAppointments = ({
         <td className="flex items-center gap-2 2xl:gap-4 py-2 xl:py-4">
           <ProfileImage
             url={patientImg}
-            name={patientName || "Unknown"}
+            name={patientName || 'Unknown'}
             className="bg-violet-600"
             bgColor={patientBgColor}
           />
           <div>
-            <h3 className="text-sm md:text-base md:font-medium uppercase">{patientName || "Unknown"}</h3>
+            <h3 className="text-sm md:text-base md:font-medium uppercase">
+              {patientName || 'Unknown'}
+            </h3>
             <span className="text-xs capitalize">{patientGender}</span>
           </div>
         </td>
 
-        <td className="hidden md:table-cell">{format(new Date(item.appointment_date), "yyyy-MM-dd")}</td>
+        <td className="hidden md:table-cell">
+          {format(new Date(item.appointment_date), 'yyyy-MM-dd')}
+        </td>
+
         <td className="hidden md:table-cell">{item.time}</td>
+
         <td className="hidden md:table-cell items-center py-2">
           <div className="flex items-center gap-2 2xl:gap-4">
             <ProfileImage
               url={doctorImg}
-              name={doctorName || "Unknown"}
+              name={doctorName || 'Unknown'}
               className="bg-blue-600"
               bgColor={doctorBgColor}
               textClassName="text-black font-medium"
             />
             <div>
-              <h3 className="font-medium uppercase">{doctorName || "Unknown"}</h3>
-              <span className="text-xs capitalize">{item.doctor?.specialization ?? ""}</span>
+              <h3 className="font-medium uppercase">
+                {doctorName || 'Unknown'}
+              </h3>
+              <span className="text-xs capitalize">
+                {item.doctor?.specialization ?? ''}
+              </span>
             </div>
           </div>
         </td>
@@ -77,15 +93,22 @@ export const RecentAppointments = ({
 
         <td>
           <div className="flex items-center gap-x-2">
-            <ViewAppointmentDialog data={item} userId={userId} isAdmin={isAdmin} />
+            <ViewAppointmentDialog
+              data={item}
+              userId={userId}
+              isAdmin={isAdmin}
+            />
+
             <Link href={`/record/appointments/${item.id}`}>See all</Link>
-            {/* Add Start Call Button */}
-            <button
-              className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md"
-              onClick={() => onStartCall(item.id.toString(), patientEmail)} // Convert id to string here
-            >
-              Start Call
-            </button>
+
+            {isVideoAppointment && (
+              <button
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md"
+                onClick={() => onStartCall?.(String(item.id), patientEmail)}
+              >
+                Start Call
+              </button>
+            )}
           </div>
         </td>
       </tr>
@@ -112,9 +135,7 @@ export const RecentAppointments = ({
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody>
-          {data.map(renderRow)}
-        </tbody>
+        <tbody>{data.map(renderRow)}</tbody>
       </table>
     </div>
   );

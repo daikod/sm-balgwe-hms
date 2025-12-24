@@ -127,7 +127,7 @@ const AdminDashboard = async () => {
             data={recentAppointments}
             userId="admin"
             isAdmin={true}
-            onStartCall={handleStartCall}
+            
           />
         </div>
       </div>
