@@ -47,8 +47,8 @@ export function DoctorDashboardClient({
       icon: Users,
       note: 'Total patients',
       link: '/record/patients',
-      className: 'bg-blue-800',
-      iconClassName: 'bg-blue-600/25 text-blue-600',
+      className: 'bg-blue-600',
+      iconClassName: 'bg-white-600/25 text-blue-800',
     },
     {
       title: 'Appointments',
@@ -56,7 +56,7 @@ export function DoctorDashboardClient({
       icon: BriefcaseBusiness,
       note: 'Total appointments',
       link: '/record/appointments',
-      className: 'bg-purple-800',
+      className: 'bg-purple-700',
       iconClassName: 'bg-yellow-600/25 text-yellow-600',
     },
     {
@@ -74,7 +74,7 @@ export function DoctorDashboardClient({
       icon: UsersRound,
       note: 'Currently admitted patients',
       link: '/doctor/admissions',
-      className: 'bg-orange-800',
+      className: 'bg-red-700',
       iconClassName: 'bg-orange-600/25 text-orange-600',
     },
     {
@@ -83,7 +83,7 @@ export function DoctorDashboardClient({
       icon: User,
       note: 'Admit a new patient',
       link: '/doctor/admissions/new',
-      className: 'bg-teal-800',
+      className: 'bg-amber-800',
       iconClassName: 'bg-teal-600/25 text-teal-600',
     },
   ];

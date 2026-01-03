@@ -137,7 +137,7 @@ const PatientDashboardClient: React.FC<PatientDashboardClientProps> = ({
       title: "Cancelled",
       value: appointmentCounts?.CANCELLED || 0,
       icon: Briefcase,
-      className: "bg-rose-800",
+      className: "bg-orange-700",
       iconClassName: "bg-rose-950/25 text-rose-600",
       note: "Cancelled appointments",
       link: "/record/appointments",
