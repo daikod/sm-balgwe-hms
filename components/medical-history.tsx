@@ -80,7 +80,7 @@ export const MedicalHistory = ({ data, isShowProfile }: DataProps) => {
         <td className="">{formatDateTime(item?.created_at.toString())}</td>
 
         <td className="hidden  items-center py-2  xl:table-cell">
-          {item?.doctor_id}
+          {item?.doctorId}
         </td>
         <td className="hidden lg:table-cell">
           {item?.diagnosis?.length === 0 ? (
@@ -90,9 +90,9 @@ export const MedicalHistory = ({ data, isShowProfile }: DataProps) => {
           ) : (
             <>
               <MedicalHistoryDialog
-                id={item?.appointment_id}
-                patientId={item?.patient_id}
-                doctor_id={item?.doctor_id}
+                id={item?.appointmentId}
+                patientId={item?.patientId}
+                doctor_id={item?.doctorId}
                 label={
                   <div className="flex gap-x-2 items-center text-lg">
                     {item?.diagnosis?.length}
@@ -119,7 +119,7 @@ export const MedicalHistory = ({ data, isShowProfile }: DataProps) => {
         </td>
 
         <td>
-          <ViewAction href={`/record/appointments/${item?.appointment_id}`} />
+          <ViewAction href={`/record/appointments/${item?.appointmentId}`} />
         </td>
       </tr>
     );

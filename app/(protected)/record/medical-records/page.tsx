@@ -91,7 +91,7 @@ const MedicalRecordsPage = async (props: SearchParamsProps) => {
         <td className="hidden md:table-cell">
           {format(item?.created_at, "yyyy-MM-dd HH:mm:ss")}
         </td>
-        <td className="hidden 2xl:table-cell">{item?.doctor_id}</td>
+        <td className="hidden 2xl:table-cell">{item?.doctorId}</td>
         <td className="hidden lg:table-cell">
           {item?.diagnosis?.length === 0 ? (
             <span className="text-gray-400 italic">No diagnosis found</span>
@@ -108,7 +108,7 @@ const MedicalRecordsPage = async (props: SearchParamsProps) => {
         </td>
 
         <td>
-          <ViewAction href={`/appointments/${item?.appointment_id}`} />
+          <ViewAction href={`/appointments/${item?.appointmentId}`} />
         </td>
       </tr>
     );

@@ -1,24 +1,38 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import prisma from "@/lib/db";
-import { AppointmentStatus } from "@prisma/client";
+import { AppointmentStatus, AppointmentType, Role } from "@prisma/client";
 import { sendMissedCallEmail } from "@/utils/email";
+import { adminOnly } from "@/lib/api-guard";
 
 const PATIENT_MISSED_MINUTES = 5;
 const DOCTOR_MISSED_MINUTES = 5;
 
-export async function POST() {
+export async function GET(req: Request) {
+  const { userId } = await adminOnly(); 
   try {
-    /**
-     * =========================
-     * PATIENT MISSED CALLS
-     * =========================
-     */
+    /* =====================
+       AUTH — ADMIN ONLY
+    ====================== */
+    const { userId, sessionClaims } = await auth();
+    const role = (sessionClaims?.publicMetadata as any)?.role;
+
+    if (!userId || role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const now = Date.now();
+
+    /* =========================
+       PATIENT MISSED CALLS
+    ========================= */
     const patientMissedThreshold = new Date(
-      Date.now() - PATIENT_MISSED_MINUTES * 60 * 1000
+      now - PATIENT_MISSED_MINUTES * 60 * 1000
     );
 
     const patientMissedAppointments = await prisma.appointment.findMany({
       where: {
+        type: AppointmentType.VIDEO,
         status: AppointmentStatus.IN_PROGRESS,
         updated_at: { lt: patientMissedThreshold },
       },
@@ -29,52 +43,48 @@ export async function POST() {
     });
 
     for (const appointment of patientMissedAppointments) {
-      // Prevent duplicate notifications
-      const alreadyNotified = await prisma.notification.findFirst({
-        where: {
-          userId: appointment.patient_id,
-          title: "Missed Video Consultation",
-          actionUrl: `/video/${appointment.roomID}`,
-        },
+      await prisma.$transaction(async (tx) => {
+        const alreadyHandled = await tx.notification.findFirst({
+          where: {
+            relatedId: appointment.id.toString(),
+            type: "appointment",
+            title: "Missed Video Consultation",
+          },
+        });
+        if (alreadyHandled) return;
+
+        await tx.appointment.update({
+          where: { id: appointment.id },
+          data: { status: AppointmentStatus.MISSED },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: appointment.patientId,
+            userRole: Role.PATIENT,
+            title: "Missed Video Consultation",
+            message: `You missed your video consultation with Dr. ${appointment.doctor.name}.`,
+            type: "appointment",
+            priority: "high",
+            relatedId: appointment.id.toString(),
+            actionUrl: `/appointments/${appointment.id}`,
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: appointment.doctorId,
+            userRole: Role.DOCTOR,
+            title: "Patient Missed Consultation",
+            message: `${appointment.patient.first_name} did not join the scheduled video consultation.`,
+            type: "appointment",
+            priority: "normal",
+            relatedId: appointment.id.toString(),
+          },
+        });
       });
 
-      if (alreadyNotified) continue;
-
-      // Cancel appointment
-      await prisma.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          status: AppointmentStatus.CANCELLED,
-        },
-      });
-
-      // Notify patient
-      await prisma.notification.create({
-        data: {
-          userId: appointment.patient_id,
-          userRole: "PATIENT",
-          title: "Missed Video Consultation",
-          message: `You missed your video consultation with Dr. ${appointment.doctor.name}.`,
-          type: "appointment",
-          priority: "high",
-          actionUrl: `/video/${appointment.roomID}`,
-        },
-      });
-
-      // Notify doctor
-      await prisma.notification.create({
-        data: {
-          userId: appointment.doctor_id,
-          userRole: "DOCTOR",
-          title: "Patient Missed Consultation",
-          message: `${appointment.patient.first_name} did not join the scheduled video consultation.`,
-          type: "appointment",
-          priority: "normal",
-          actionUrl: `/video/${appointment.roomID}`,
-        },
-      });
-
-      // Send emails
+      /* Emails (post-commit) */
       if (appointment.patient?.email) {
         await sendMissedCallEmail({
           to: appointment.patient.email,
@@ -98,17 +108,16 @@ export async function POST() {
       }
     }
 
-    /**
-     * =========================
-     * DOCTOR MISSED CALLS
-     * =========================
-     */
+    /* =========================
+       DOCTOR MISSED CALLS
+    ========================= */
     const doctorMissedThreshold = new Date(
-      Date.now() - DOCTOR_MISSED_MINUTES * 60 * 1000
+      now - DOCTOR_MISSED_MINUTES * 60 * 1000
     );
 
     const doctorMissedAppointments = await prisma.appointment.findMany({
       where: {
+        type: AppointmentType.VIDEO,
         status: AppointmentStatus.SCHEDULED,
         appointment_date: { lt: doctorMissedThreshold },
       },
@@ -119,51 +128,47 @@ export async function POST() {
     });
 
     for (const appointment of doctorMissedAppointments) {
-      const alreadyNotified = await prisma.notification.findFirst({
-        where: {
-          userId: appointment.doctor_id,
-          title: "Missed Video Consultation",
-          actionUrl: `/video/${appointment.roomID}`,
-        },
+      await prisma.$transaction(async (tx) => {
+        const alreadyHandled = await tx.notification.findFirst({
+          where: {
+            relatedId: appointment.id.toString(),
+            type: "appointment",
+            title: "Doctor Missed Consultation",
+          },
+        });
+        if (alreadyHandled) return;
+
+        await tx.appointment.update({
+          where: { id: appointment.id },
+          data: { status: AppointmentStatus.MISSED },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: appointment.doctorId,
+            userRole: Role.DOCTOR,
+            title: "Missed Video Consultation",
+            message: `You missed your scheduled video consultation with ${appointment.patient.first_name}.`,
+            type: "appointment",
+            priority: "high",
+            relatedId: appointment.id.toString(),
+          },
+        });
+
+        await tx.notification.create({
+          data: {
+            userId: appointment.patientId,
+            userRole: Role.PATIENT,
+            title: "Doctor Missed Consultation",
+            message: `Dr. ${appointment.doctor.name} did not join the scheduled video consultation.`,
+            type: "appointment",
+            priority: "normal",
+            relatedId: appointment.id.toString(),
+          },
+        });
       });
 
-      if (alreadyNotified) continue;
-
-      // Cancel appointment
-      await prisma.appointment.update({
-        where: { id: appointment.id },
-        data: {
-          status: AppointmentStatus.CANCELLED,
-        },
-      });
-
-      // Notify doctor
-      await prisma.notification.create({
-        data: {
-          userId: appointment.doctor_id,
-          userRole: "DOCTOR",
-          title: "Missed Video Consultation",
-          message: `You missed your scheduled video consultation with ${appointment.patient.first_name}.`,
-          type: "appointment",
-          priority: "high",
-          actionUrl: `/video/${appointment.roomID}`,
-        },
-      });
-
-      // Notify patient
-      await prisma.notification.create({
-        data: {
-          userId: appointment.patient_id,
-          userRole: "PATIENT",
-          title: "Doctor Missed Consultation",
-          message: `Dr. ${appointment.doctor.name} did not join the scheduled video consultation.`,
-          type: "appointment",
-          priority: "normal",
-          actionUrl: `/video/${appointment.roomID}`,
-        },
-      });
-
-      // Send emails
+      /* Emails */
       if (appointment.doctor?.email) {
         await sendMissedCallEmail({
           to: appointment.doctor.email,
@@ -187,7 +192,11 @@ export async function POST() {
       }
     }
 
+    
+
     return NextResponse.json({
+      success: true,
+      checkedBy: userId,
       patientMissed: patientMissedAppointments.length,
       doctorMissed: doctorMissedAppointments.length,
     });

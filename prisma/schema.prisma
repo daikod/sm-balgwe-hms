@@ -1,11 +1,10 @@
 generator client {
   provider = "prisma-client-js"
-  
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")  
+  url      = env("DATABASE_URL")
 }
 
 // ========================= ENUMS =========================
@@ -46,6 +45,8 @@ enum AppointmentStatus {
   CANCELLED
   COMPLETED
   IN_PROGRESS
+  READY_FOR_ADMISSION
+  MISSED
 }
 
 enum PaymentMethod {
@@ -64,10 +65,10 @@ enum Availability_status {
   UNAVAILABLE
 }
 
-// ========================= MODELS =========================
+// ===================== MODELS =========================
 
 model Patient {
-  id                       String   @id // clerk userId
+  id                       String   @id
   first_name               String
   last_name                String
   date_of_birth            DateTime
@@ -83,6 +84,7 @@ model Patient {
   allergies                String?
   medical_conditions       String?
   medical_history          String?
+  vitals                   Json?    // <- this makes the 'vitals' object valid in Prisma client
   insurance_provider       String?
   insurance_number         String?
   privacy_consent          Boolean
@@ -90,14 +92,20 @@ model Patient {
   medical_consent          Boolean
   img                      String?
   colorCode                String?
+  doctorId                 String? // normalized field
+  status                   Status   @default(ACTIVE)
+  onboarded                Boolean  @default(false) // ✅ new column
 
-  appointments              Appointment[]       @relation("PatientAppointments")  // Added relation name
+  appointments              Appointment[]
   medical                   MedicalRecords[]
   payments                  Payment[]
   ratings                   Rating[]
   prescriptions             Prescription[]
   medicationAdministrations MedicationAdministration[]
-  notifications             Notification[]
+  notifications             Notification[]             @relation("NotificationPatient")
+  admissions                Admission[]
+
+  doctor Doctor? @relation(fields: [doctorId], references: [id])
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -107,7 +115,7 @@ model Doctor {
   id                  String  @id
   email               String  @unique
   name                String
-  gender              String? // optional
+  gender              String?
   specialization      String
   license_number      String
   phone               String
@@ -119,10 +127,12 @@ model Doctor {
 
   type          JOBTYPE        @default(FULL)
   working_days  WorkingDays[]
-  appointments  Appointment[]  @relation("DoctorAppointments")  // Added relation name
+  appointments  Appointment[]
   ratings       Rating[]
   diagnosis     Diagnosis[]
   prescriptions Prescription[]
+  patients      Patient[]
+  notifications Notification[] @relation("NotificationDoctor")
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -130,12 +140,12 @@ model Doctor {
 
 model WorkingDays {
   id         Int    @id @default(autoincrement())
-  doctor_id  String
+  doctorId   String
   day        String
   start_time String
   close_time String
 
-  doctor Doctor @relation(fields: [doctor_id], references: [id], onDelete: Cascade)
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -162,47 +172,48 @@ model Staff {
 model Appointment {
   id               Int               @id @default(autoincrement())
   roomID           String            @default("")
-  patient_id       String
-  doctor_id        String
+  patientId        String
+  doctorId         String
   appointment_date DateTime
   scheduledAT      DateTime          @default(now())
   time             String
   status           AppointmentStatus @default(PENDING)
-  video_link      String?  // <-- add this field
+  video_link       String?
   duration         Int               @default(30)
 
-  type             AppointmentType   // ✅ ENUM
-  note             String?
-  reason           String?
+  type        AppointmentType
+  note        String?
+  reason      String?
+  admissionId Int?
+  admission   Admission?      @relation(fields: [admissionId], references: [id])
 
-  patient       Patient @relation("PatientAppointments", fields: [patient_id], references: [id], onDelete: Cascade)
-  doctor        Doctor  @relation("DoctorAppointments", fields: [doctor_id], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
 
-  bills      Payment[]
-  medical    MedicalRecords[]
+  bills   Payment[]
+  medical MedicalRecords[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
-
 model Payment {
-  id             Int      @id @default(autoincrement())
-  bill_id        Int?
-  patient_id     String
-  appointment_id Int      @unique
-  bill_date      DateTime
-  payment_date   DateTime
-  discount       Float
-  total_amount   Float
-  amount_paid    Float
+  id            Int      @id @default(autoincrement())
+  bill_id       Int?
+  patientId     String
+  appointmentId Int      @unique
+  bill_date     DateTime
+  payment_date  DateTime
+  discount      Float
+  total_amount  Float
+  amount_paid   Float
 
   payment_method PaymentMethod @default(CASH)
   status         PaymentStatus @default(UNPAID)
-  receipt_number Int           
+  receipt_number Int
 
-  appointment Appointment    @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
-  patient     Patient        @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  appointment Appointment    @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient     Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
   bills       PatientBills[]
 
   created_at DateTime @default(now())
@@ -231,7 +242,7 @@ model LabTest {
   result         String
   status         String
   notes          String?
-  service_id     Int            @unique
+  service_id     Int
   services       Services       @relation(fields: [service_id], references: [id])
   medical_record MedicalRecords @relation(fields: [record_id], references: [id], onDelete: Cascade)
 
@@ -241,30 +252,33 @@ model LabTest {
 
 model MedicalRecords {
   id             Int     @id @default(autoincrement())
-  patient_id     String
-  appointment_id Int
-  doctor_id      String
+  patientId      String
+  appointmentId  Int
+  doctorId       String
   treatment_plan String?
   prescriptions  String?
   lab_request    String?
 
-  appointment Appointment @relation(fields: [appointment_id], references: [id], onDelete: Cascade)
-  patient     Patient     @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
   lab_test    LabTest[]
   notes       String?
 
   vital_signs VitalSigns[]
   diagnosis   Diagnosis[]
 
+  admission Admission? @relation("AdmissionMedicalRecord")
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
 model VitalSigns {
-  id                Int            @id @default(autoincrement())
-  patient_id        String
-  medical_id        Int
-  medical           MedicalRecords @relation(fields: [medical_id], references: [id], onDelete: Cascade)
+  id        Int            @id @default(autoincrement())
+  patientId String
+  medicalId Int
+  medical   MedicalRecords @relation(fields: [medicalId], references: [id], onDelete: Cascade)
+
   body_temperature  Float
   systolic          Int
   diastolic         Int
@@ -280,24 +294,24 @@ model VitalSigns {
 
 model Diagnosis {
   id                     Int     @id @default(autoincrement())
-  patient_id             String
-  medical_id             Int
-  doctor_id              String
-  doctor                 Doctor  @relation(fields: [doctor_id], references: [id])
+  patientId              String
+  medicalId              Int
+  doctorId               String
+  doctor                 Doctor  @relation(fields: [doctorId], references: [id])
   symptoms               String
   diagnosis              String
   notes                  String?
   prescribed_medications String?
   follow_up_plan         String?
 
-  medical    MedicalRecords @relation(fields: [medical_id], references: [id], onDelete: Cascade)
+  medical    MedicalRecords @relation(fields: [medicalId], references: [id], onDelete: Cascade)
   created_at DateTime       @default(now())
-  updated_at DateTime       @updatedAt
+  updated_at DateTime       @default(now())
 }
 
 model AuditLog {
   id        Int     @id @default(autoincrement())
-  user_id   String
+  userId    String
   record_id String
   action    String
   details   String?
@@ -308,14 +322,14 @@ model AuditLog {
 }
 
 model Rating {
-  id         Int     @id @default(autoincrement())
-  staff_id   String
-  patient_id String
-  rating     Int
-  comment    String?
+  id        Int     @id @default(autoincrement())
+  doctorId  String
+  patientId String
+  rating    Int
+  comment   String?
 
-  doctor  Doctor  @relation(fields: [staff_id], references: [id], onDelete: Cascade)
-  patient Patient @relation(fields: [patient_id], references: [id], onDelete: Cascade)
+  doctor  Doctor  @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -326,14 +340,84 @@ model Services {
   service_name String
   description  String
   price        Float
-  labtest      LabTest?
+  labtests     LabTest[] // <-- back-relation
   bills        PatientBills[]
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
-// ========================= NEW MODELS =========================
+// ========================= ADMISSIONS =========================
+
+model Admission {
+  id              Int     @id @default(autoincrement())
+  patientId       String
+  patient         Patient @relation(fields: [patientId], references: [id])
+  medicalRecordId Int?    @unique
+
+  admittedAt   DateTime  @default(now())
+  dischargedAt DateTime?
+  status       String    @default("ACTIVE")
+
+  chiefComplaint       String
+  provisionalDiagnosis String
+  initialTherapyPlan   String?
+
+  admittingDoctorId String?
+  referralDoctor    String?
+
+  medicalRecord MedicalRecords? @relation("AdmissionMedicalRecord", fields: [medicalRecordId], references: [id])
+
+  bedAllocations BedAllocation[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+
+  @@index([patientId])
+  @@index([medicalRecordId])
+}
+
+model Bed {
+  id        Int     @id @default(autoincrement())
+  unitId    Int
+  bedNumber String
+  isActive  Boolean @default(true)
+
+  unit        InpatientUnit   @relation(fields: [unitId], references: [id])
+  allocations BedAllocation[]
+
+  @@unique([unitId, bedNumber])
+}
+
+model BedAllocation {
+  id          Int       @id @default(autoincrement())
+  admissionId Int
+  bedId       Int
+  assignedAt  DateTime  @default(now())
+  releasedAt  DateTime?
+
+  admission Admission @relation(fields: [admissionId], references: [id])
+  bed       Bed       @relation(fields: [bedId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([admissionId])
+  @@index([bedId])
+}
+
+model InpatientUnit {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  beds Bed[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ========================= PRESCRIPTIONS & MEDICATIONS =========================
 
 model Prescription {
   id                 String @id @default(cuid())
@@ -349,9 +433,9 @@ model Prescription {
   diagnosisId   Int?
 
   medications  Medication[]
-  instructions String?      
-  diagnosis    String       
-  notes        String?      
+  instructions String?
+  diagnosis    String
+  notes        String?
 
   prescribedDate DateTime  @default(now())
   validUntil     DateTime?
@@ -363,7 +447,6 @@ model Prescription {
   @@index([patientId])
   @@index([doctorId])
   @@index([status])
-  @@map("prescriptions")
 }
 
 model Medication {
@@ -385,7 +468,6 @@ model Medication {
   updatedAt DateTime @updatedAt
 
   @@index([prescriptionId])
-  @@map("medications")
 }
 
 model MedicationAdministration {
@@ -400,42 +482,38 @@ model MedicationAdministration {
   administeredByRole String
   administeredAt     DateTime @default(now())
   dosageGiven        String
-  notes              String?  
+  notes              String?
   status             String
 
   createdAt DateTime @default(now())
 
   @@index([medicationId])
   @@index([patientId])
-  @@map("medication_administrations")
 }
 
 model Notification {
-  id       String @id @default(cuid())
-  userId   String
-  userRole String
-
-  title    String
-  message  String 
-  type     String
-  category String?
-
+  id          String    @id @default(cuid())
+  userId      String
+  userRole    Role
+  title       String
+  message     String
+  type        String
+  category    String?
   relatedId   String?
   relatedType String?
   actionUrl   String?
   actionLabel String?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  priority    String    @default("normal")
+  senderId    String?
+  senderName  String?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
 
-  isRead   Boolean   @default(false)
-  readAt   DateTime?
-  priority String    @default("normal")
-
-  senderId   String?
-  senderName String?
-
-  createdAt DateTime  @default(now())
-  expiresAt DateTime?
-
-  patient Patient? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Polymorphic relation
+  patient Patient? @relation("NotificationPatient", fields: [userId], references: [id], onDelete: Cascade, map: "Notification_patient_fkey")
+  doctor  Doctor?  @relation("NotificationDoctor", fields: [userId], references: [id], onDelete: Cascade, map: "Notification_doctor_fkey")
 
   @@index([userId])
   @@index([isRead])
@@ -443,3 +521,20 @@ model Notification {
   @@index([priority])
   @@map("notifications")
 }
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String?        // Optional: store full email body for debugging
+  status    String         // e.g., 'SENT', 'FAILED', 'PENDING'
+  error     String?        // Error message if sending failed
+  attempts  Int      @default(0) // Number of send attempts
+  sentAt    DateTime?       // When email was successfully sent
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([to])
+}
+

@@ -1,3 +1,5 @@
+"use client";
+
 import availableDays from "@/components/available-doctor";
 import { ProfileImage } from "@/components/profile-image";
 import { RatingContainer } from "@/components/rating-container";
@@ -12,17 +14,22 @@ import { FaBriefcaseMedical, FaCalendarDays } from "react-icons/fa6";
 import { IoTimeSharp } from "react-icons/io5";
 import { MdEmail, MdLocalPhone } from "react-icons/md";
 
-const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
-  const params = await props.params;
-  const { data, totalAppointment } = await getDoctorById(params?.id);
+const DoctorProfile = async ({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) => {
+  const resolvedParams = await params;
+  const { data, totalAppointment } = await getDoctorById(resolvedParams.id);
 
   if (!data) return null;
 
-  // Dummy handlers for RecentAppointments
-  const userId = data.id; // current doctor ID
+  const userId = data.id;
   const isAdmin = false;
+
   const onStartCall = async (appointmentId: string, patientEmail: string) => {
-    // implement call logic here
     console.log("Starting call:", appointmentId, patientEmail);
   };
 
@@ -32,88 +39,86 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="bg-blue-50 py-6 px-4 rounded-md flex-1 flex gap-4">
             <ProfileImage
-              url={data?.img!}
-              name={data?.name}
+              url={data.img!}
+              name={data.name}
               className="size-20"
-              bgColor={data?.colorCode!}
+              bgColor={data.colorCode!}
               textClassName="text-4xl text-black"
             />
 
             <div className="w-2/3 flex flex-col justify-between gap-x-4">
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold uppercase">{data?.name}</h1>
-              </div>
+              <h1 className="text-xl font-semibold uppercase">{data.name}</h1>
               <p className="text-sm text-gray-500">
-                {data?.address || "No address information"}
+                {data.address || "No address information"}
               </p>
 
-              <div className="mt-4 flex items-center justify-between gap-2 flex-wrap text-sm font-medium">
-                <div className="w-full flex text-base">
+              <div className="mt-4 flex flex-wrap gap-3 text-sm font-medium">
+                <div className="flex gap-1">
                   <span>License #:</span>
-                  <p className="font-semibold">{data?.license_number}</p>
+                  <span className="font-semibold">{data.license_number}</span>
                 </div>
 
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <FaBriefcaseMedical className="text-lg" />
-                  <span className="capitalize">{data?.specialization}</span>
+                <div className="flex items-center gap-2">
+                  <FaBriefcaseMedical />
+                  <span className="capitalize">{data.specialization}</span>
                 </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <BsPersonWorkspace className="text-lg" />
-                  <span className="capitalize">{data?.type}</span>
+
+                <div className="flex items-center gap-2">
+                  <BsPersonWorkspace />
+                  <span className="capitalize">{data.type}</span>
                 </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <MdEmail className="text-lg" />
-                  <span className="capitalize">{data?.email}</span>
+
+                <div className="flex items-center gap-2">
+                  <MdEmail />
+                  <span>{data.email}</span>
                 </div>
-                <div className="w-full md:w-1/3 lg:w-full 2xl:w-1/3 flex items-center gap-2">
-                  <MdLocalPhone className="text-lg" />
-                  <span className="capitalize">{data?.phone}</span>
+
+                <div className="flex items-center gap-2">
+                  <MdLocalPhone />
+                  <span>{data.phone}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* STATS */}
-          <div className="flex-1 flex gap-4 justify-between flex-wrap">
+          <div className="flex-1 flex gap-4 flex-wrap">
             <div className="doctorCard">
-              <FaBriefcaseMedical className="size-5" />
+              <FaBriefcaseMedical />
               <div>
-                <h1 className="text-xl font-serif">{totalAppointment}</h1>
-                <span className="text-sm text-gray-500">Appointments</span>
+                <h1>{totalAppointment}</h1>
+                <span>Appointments</span>
               </div>
             </div>
+
             <div className="doctorCard">
-              <FaCalendarDays className="size-5" />
+              <FaCalendarDays />
               <div>
-                <h1 className="text-xl font-serif">{data?.working_days?.length}</h1>
-                <span className="text-sm text-gray-500">Working Days</span>
+                <h1>{data.working_days?.length}</h1>
+                <span>Working Days</span>
               </div>
             </div>
+
             <div className="doctorCard">
-              <IoTimeSharp className="size-5" />
+              <IoTimeSharp />
               <div>
-                <h1 className="text-xl font-serif">
-                  {availableDays({ data: data.working_days } as any)}
-                </h1>
-                <span className="text-sm text-gray-500">Working Hours</span>
+                <h1>{availableDays({ data: data.working_days } as any)}</h1>
+                <span>Working Hours</span>
               </div>
             </div>
+
             <div className="doctorCard">
-              <BsCalendarDateFill className="size-5" />
+              <BsCalendarDateFill />
               <div>
-                <h1 className="text-xl font-serif">
-                  {format(data?.created_at, "yyyy-MM-dd")}
-                </h1>
-                <span className="text-sm text-gray-500">Joined Date</span>
+                <h1>{format(data.created_at, "yyyy-MM-dd")}</h1>
+                <span>Joined Date</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* recent appointments */}
         <div className="bg-white rounded-e-xl p-4 mt-6">
           <RecentAppointments
-            data={data?.appointments}
+            data={data.appointments}
             userId={userId}
             isAdmin={isAdmin}
             onStartCall={onStartCall}
@@ -121,29 +126,21 @@ const DoctorProfile = async (props: { params: Promise<{ id: string }> }) => {
         </div>
       </div>
 
-      {/* RIGHT SIDE */}
       <div className="w-full lg:w-[30%] flex flex-col gap-4">
         <div className="bg-white p-4 rounded-md">
           <h1 className="text-xl font-semibold">Quick Links</h1>
 
           <div className="mt-8 flex gap-4 flex-wrap text-sm text-gray-500">
             <Link
-              href={`/record/appointments?id=${data?.id}`}
+              href={`/record/appointments?id=${data.id}`}
               className="p-3 rounded-md bg-yellow-60 hover:underline"
             >
               Doctor Appointments
             </Link>
-
-            <Link
-              href="#"
-              className="p-3 rounded-md bg-purple-50 hover:underline"
-            >
-              Apply for Leave
-            </Link>
           </div>
         </div>
 
-        <RatingContainer id={params?.id} />
+        <RatingContainer id={resolvedParams.id} />
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import db from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { calculateBMI } from "@/utils";
-import { stat } from "fs";
 import { format } from "date-fns";
 import { Separator } from "../ui/separator";
 import { checkRole } from "@/utils/roles";
@@ -23,13 +22,25 @@ const ItemCard = ({ label, value }: { label: string; value: string }) => {
     </div>
   );
 };
+
+/**
+ * Maps BMI status → Tailwind color classes
+ * Adjust values here if clinical standards change
+ */
+const BMI_STATUS_COLOR: Record<string, string> = {
+  Underweight: "text-blue-600",
+  Normal: "text-green-600",
+  Overweight: "text-yellow-600",
+  Obese: "text-red-600",
+};
+
 export const VitalSigns = async ({
   id,
   patientId,
   doctorId,
 }: VitalSignsProps) => {
   const data = await db.medicalRecords.findFirst({
-    where: { appointment_id: Number(id) },
+    where: { appointmentId: Number(id) },
     include: {
       vital_signs: {
         orderBy: { created_at: "desc" },
@@ -38,8 +49,7 @@ export const VitalSigns = async ({
     orderBy: { created_at: "desc" },
   });
 
-  const vitals = data?.vital_signs || null;
-
+  const vitals = data?.vital_signs ?? [];
   const isPatient = await checkRole("PATIENT");
 
   return (
@@ -50,64 +60,73 @@ export const VitalSigns = async ({
 
           {!isPatient && (
             <AddVitalSigns
-              key={new Date().getTime()}
+              key={Date.now()}
               patientId={patientId}
               doctorId={doctorId}
-              appointmentId={id!.toString()}
-              medicalId={data ? data?.id!.toString() : ""}
+              appointmentId={id.toString()}
+              medicalId={data?.id?.toString() ?? ""}
             />
           )}
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {vitals?.map((el) => {
-            const { bmi, status, colorCode } = calculateBMI(
+          {vitals.map((el) => {
+            const { bmi, status } = calculateBMI(
               el.weight || 0,
               el.height || 0
             );
 
+            const statusColor =
+              BMI_STATUS_COLOR[status] ?? "text-gray-500";
+
             return (
-              <div className="space-y-4" key={el?.id}>
+              <div className="space-y-4" key={el.id}>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <ItemCard
                     label="Body Temperature"
-                    value={`${el?.body_temperature}°C`}
+                    value={`${el.body_temperature}°C`}
                   />
                   <ItemCard
                     label="Blood Pressure"
-                    value={`${el?.systolic} / ${el?.diastolic} mmHg`}
+                    value={`${el.systolic} / ${el.diastolic} mmHg`}
                   />
-                  <ItemCard label="Heart Rate" value={`${el?.heartRate} bpm`} />
+                  <ItemCard
+                    label="Heart Rate"
+                    value={`${el.heartRate} bpm`}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <ItemCard label="Weight" value={`${el?.weight} kg`} />
-                  <ItemCard label="Height" value={`${el?.height} cm`} />
+                  <ItemCard label="Weight" value={`${el.weight} kg`} />
+                  <ItemCard label="Height" value={`${el.height} cm`} />
 
                   <div className="w-full">
-                    <div className="flex gap-x-2 items-center" style={{ "--status-color": colorCode } as React.CSSProperties}>
-                    <p className="text-lg xl:text-xl font-medium">{bmi}</p>
-                    <span className="text-sm font-medium text(--status-color)">
-                    ({status})
-                    </span>
-                  </div>
+                    <div className="flex gap-x-2 items-center">
+                      <p className="text-lg xl:text-xl font-medium">{bmi}</p>
+                      <span
+                        className={`text-sm font-medium ${statusColor}`}
+                      >
+                        ({status})
+                      </span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <ItemCard
                     label="Respiratory Rate"
-                    value={`${el?.respiratory_rate || "N/A"}`}
+                    value={`${el.respiratory_rate ?? "N/A"}`}
                   />
                   <ItemCard
                     label="Oxygen Saturation"
-                    value={`${el?.oxygen_saturation || "n/a"}`}
+                    value={`${el.oxygen_saturation ?? "N/A"}`}
                   />
                   <ItemCard
                     label="Reading Date"
-                    value={format(el?.created_at, "MMM d, yyyy hh:mm a")}
+                    value={format(el.created_at, "MMM d, yyyy hh:mm a")}
                   />
                 </div>
+
                 <Separator className="mt-4" />
               </div>
             );

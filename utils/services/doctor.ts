@@ -98,7 +98,7 @@ export const getAllDoctors = async ({
  */
 export const getDoctorAppointments = async (doctorId: string) => {
   return db.appointment.findMany({
-    where: { doctor_id: doctorId },
+    where: { doctorId: doctorId },
     include: {
       patient: {
         select: {
@@ -119,7 +119,7 @@ export const getDoctorAppointments = async (doctorId: string) => {
  */
 export const getRatingById = async (doctorId: string) => {
   const ratings = await db.rating.findMany({
-    where: { staff_id: doctorId },
+    where: { doctorId },
     orderBy: { created_at: "desc" },
   });
 
@@ -144,7 +144,7 @@ export const getRatingById = async (doctorId: string) => {
 export async function getDoctorDashboardStats(doctorId: string) {
   const appointments: AppointmentWithRelations[] =
     await db.appointment.findMany({
-      where: { doctor_id: doctorId },
+      where: { doctorId: doctorId },
       include: { patient: true, doctor: true },
       orderBy: { appointment_date: "desc" },
     });
@@ -156,6 +156,8 @@ export async function getDoctorDashboardStats(doctorId: string) {
     IN_PROGRESS: 0,
     COMPLETED: 0,
     CANCELLED: 0,
+    READY_FOR_ADMISSION: 0,
+    MISSED: 0
   };
 
   appointments.forEach((a) => {
@@ -200,7 +202,7 @@ export async function getDoctorDashboardStats(doctorId: string) {
   }));
 
   const totalPatient = new Set(
-    appointments.map((a) => a.patient_id)
+    appointments.map((a) => a.patientId)
   ).size;
 
   const availableDoctors = await db.doctor.findMany({

@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 
 interface AppointmentDetailsProps {
   id: number | string;
-  patient_id: string;
+  patientId: string;
   appointment_date: Date;
   time: string;
   notes?: string;
 }
 export const AppointmentDetails = ({
   id,
-  patient_id,
+  patientId,
   appointment_date,
   time,
   notes,

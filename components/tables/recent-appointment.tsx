@@ -1,4 +1,4 @@
-'use client';
+'use client'; // This component should run on the client side
 
 import React from 'react';
 import { Appointment } from '@/types/appointment';
@@ -25,6 +25,7 @@ export const RecentAppointments = ({
   const renderRow = (item: Appointment) => {
     const patientName =
       `${item.patient?.first_name ?? ''} ${item.patient?.last_name ?? ''}`.trim();
+      
 
     const doctorName = item.doctor?.name ?? '';
     const patientImg = item.patient?.img ?? '';
@@ -37,7 +38,8 @@ export const RecentAppointments = ({
         ? String(item.patient.gender).toLowerCase()
         : '';
 
-    const patientEmail = item.patient?.email ?? '';
+    const patientEmail = item.patient?.email ?? ''; // Handle missing email
+    const patientPhone = item.patient?.phone ?? ''; // Handle missing phone
 
     const isVideoAppointment = item.type === 'VIDEO';
 
@@ -104,7 +106,11 @@ export const RecentAppointments = ({
             {isVideoAppointment && (
               <button
                 className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md"
-                onClick={() => onStartCall?.(String(item.id), patientEmail)}
+                onClick={() => {
+                  if (onStartCall) {
+                    onStartCall(String(item.id), patientEmail);
+                  }
+                }}
               >
                 Start Call
               </button>

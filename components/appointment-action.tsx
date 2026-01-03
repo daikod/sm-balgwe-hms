@@ -6,16 +6,24 @@ import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { appointmentAction } from "@/app/actions/appointment";
-import { AppointmentStatus } from "@prisma/client";
+
+// ✅ Define AppointmentStatus enum locally to avoid Prisma import in client
+export enum AppointmentStatusEnum {
+  PENDING = "PENDING",
+  SCHEDULED = "SCHEDULED",
+  IN_PROGRESS = "IN_PROGRESS",
+  COMPLETED = "COMPLETED",
+  CANCELLED = "CANCELLED",
+}
 
 interface Props {
   id: string | number;
-  status: AppointmentStatus;
+  status: AppointmentStatusEnum;
 }
 
 export const AppointmentAction = ({ id, status }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [selected, setSelected] = useState<AppointmentStatus | null>(null);
+  const [selected, setSelected] = useState<AppointmentStatusEnum | null>(null);
   const [reason, setReason] = useState("");
   const router = useRouter();
 
@@ -47,14 +55,14 @@ export const AppointmentAction = ({ id, status }: Props) => {
   return (
     <div>
       <div className="flex items-center space-x-3">
-        {Object.values(AppointmentStatus).map((statusOption) => (
+        {Object.values(AppointmentStatusEnum).map((statusOption) => (
           <Button
             key={statusOption}
             variant="outline"
             disabled={
               isLoading ||
-              status === AppointmentStatus.COMPLETED ||
-              status === AppointmentStatus.CANCELLED
+              status === AppointmentStatusEnum.COMPLETED ||
+              status === AppointmentStatusEnum.CANCELLED
             }
             onClick={() => setSelected(statusOption)}
           >
@@ -63,7 +71,7 @@ export const AppointmentAction = ({ id, status }: Props) => {
         ))}
       </div>
 
-      {selected === AppointmentStatus.CANCELLED && (
+      {selected === AppointmentStatusEnum.CANCELLED && (
         <Textarea
           disabled={isLoading}
           className="mt-4"

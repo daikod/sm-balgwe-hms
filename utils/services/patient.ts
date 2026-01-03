@@ -1,3 +1,5 @@
+// /utils/services/patient.ts
+
 import db from "@/lib/db";
 import { getMonth, format, startOfYear, endOfMonth } from "date-fns";
 import { daysOfWeek } from "..";
@@ -77,7 +79,7 @@ export async function getPatientDashboardStatistics(id: string) {
     if (!data) return { success: false, message: "Patient data not found", status: 200, data: null };
 
     const appointments = await db.appointment.findMany({
-      where: { patient_id: data.id },
+      where: { patientId: data.id },
       include: {
         patient: {
           select: {

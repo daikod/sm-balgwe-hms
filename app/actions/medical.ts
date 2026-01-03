@@ -21,9 +21,9 @@ export const addDiagnosis = async (
     if (!validatedData.medical_id) {
       medicalRecord = await db.medicalRecords.create({
         data: {
-          patient_id: validatedData.patient_id,
-          doctor_id: validatedData.doctor_id,
-          appointment_id: Number(appointmentId),
+          patientId: validatedData.patient_id,
+          doctorId: validatedData.doctor_id,
+          appointmentId: Number(appointmentId),
         },
       });
     }
@@ -31,8 +31,14 @@ export const addDiagnosis = async (
     const med_id = validatedData.medical_id || medicalRecord?.id;
     await db.diagnosis.create({
       data: {
-        ...validatedData,
-        medical_id: Number(med_id),
+        patientId: validatedData.patient_id,
+        doctorId: validatedData.doctor_id,
+        medicalId: Number(med_id),
+        symptoms: validatedData.symptoms,
+        diagnosis: validatedData.diagnosis,
+        notes: validatedData.notes,
+        prescribed_medications: validatedData.prescribed_medications,
+        follow_up_plan: validatedData.follow_up_plan,
       },
     });
 
@@ -62,105 +68,105 @@ export async function addNewBill(data: any) {
     }
 
     const isValidData = PatientBillSchema.safeParse(data);
+    if (!isValidData.success) {
+      return { success: false, msg: "Invalid data" };
+    }
 
     const validatedData = isValidData.data;
-    let bill_info = null;
+    let bill_info: { id: number } | null = null;
 
-    if (!data?.bill_id || data?.bill_id === "undefined") {
-      const info = await db.appointment.findUnique({
-        where: { id: Number(data?.appointment_id)! },
-        select: {
-          id: true,
-          patient_id: true,
-          bills: {
-            where: {
-              appointment_id: Number(data?.appointment_id),
-            },
-          },
+    const appointment = await db.appointment.findUnique({
+      where: { id: Number(data.appointment_id) },
+      select: {
+        id: true,
+        patientId: true,
+      },
+    });
+
+    if (!appointment) {
+      return { success: false, msg: "Appointment not found" };
+    }
+
+    const existingBills = await db.payment.findMany({
+      where: {
+        appointmentId: appointment.id,
+      },
+      orderBy: { created_at: "asc" },
+    });
+
+    if (!existingBills.length) {
+      const receiptNumber = Number(
+        `${Date.now()}${Math.floor(Math.random() * 100)}`
+      );
+
+      bill_info = await db.payment.create({
+        data: {
+          appointmentId: appointment.id,
+          patientId: appointment.patientId,
+          receipt_number: receiptNumber,
+          bill_date: new Date(),
+          payment_date: new Date(),
+          discount: data.discount ?? 0,
+          amount_paid: data.amount_paid,
+          total_amount: data.total_amount,
         },
       });
-
-      const receiptNumber = Number(
-          `${Date.now()}${Math.floor(Math.random() * 100)}`
-       );
-
-
-      if (!info?.bills?.length) {
-        bill_info = await db.payment.create({
-          data: {
-            appointment_id: Number(data?.appointment_id),
-            patient_id: info?.patient_id!,
-            receipt_number: receiptNumber,
-            bill_date: new Date(),
-            payment_date: new Date(),
-            discount: data?.discount ?? 0,
-            amount_paid: data?.amount_paid,
-            total_amount: data?.total_amount,
-          },
-        });
-      } else {
-        bill_info = info?.bills[0];
-      }
     } else {
-      bill_info = {
-        id: data?.bill_id,
-      };
+      bill_info = existingBills[0];
     }
 
     await db.patientBills.create({
       data: {
-        bill_id: Number(bill_info?.id),
-        service_id: Number(validatedData?.service_id),
-        service_date: new Date(validatedData?.service_date!),
-        quantity: Number(validatedData?.quantity),
-        unit_cost: Number(validatedData?.unit_cost),
-        total_cost: Number(validatedData?.total_cost),
+        bill_id: bill_info.id,
+        service_id: Number(validatedData.service_id),
+        service_date: new Date(validatedData.service_date),
+        quantity: Number(validatedData.quantity),
+        unit_cost: Number(validatedData.unit_cost),
+        total_cost: Number(validatedData.total_cost),
       },
     });
 
     return {
       success: true,
       error: false,
-      msg: `Bill added successfully`,
+      msg: "Bill added successfully",
     };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { success: false, msg: "Internal Server Error" };
   }
 }
 
-export async function generateBill(data: any) {
+// ==================== FIXED: export generateBill ====================
+export const generateBill = async (data: any) => {
   try {
-    const isValidData = PaymentSchema.safeParse(data);
+    const isValid = PaymentSchema.safeParse(data);
+    if (!isValid.success) {
+      return { success: false, msg: "Invalid data" };
+    }
 
-    const validatedData = isValidData.data;
+    const validatedData = isValid.data;
 
     const discountAmount =
-      (Number(validatedData?.discount) / 100) *
-      Number(validatedData?.total_amount);
+      (Number(validatedData.discount) / 100) * Number(validatedData.total_amount);
 
-    const res = await db.payment.update({
+    const payment = await db.payment.update({
+      where: { id: Number(validatedData.id) },
       data: {
-        bill_date: validatedData?.bill_date,
+        bill_date: validatedData.bill_date,
         discount: discountAmount,
-        total_amount: Number(validatedData?.total_amount)!,
+        total_amount: Number(validatedData.total_amount),
       },
-      where: { id: Number(validatedData?.id) },
     });
 
     await db.appointment.update({
-      data: {
-        status: "COMPLETED",
-      },
-      where: { id: res.appointment_id },
+      where: { id: payment.appointmentId },
+      data: { status: "COMPLETED" },
     });
-    return {
-      success: true,
-      error: false,
-      msg: `Bill generated successfully`,
-    };
+
+    return { success: true, error: false, msg: "Bill generated successfully" };
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return { success: false, msg: "Internal Server Error" };
   }
-}
+};

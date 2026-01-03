@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPatient } from "@/utils/services/patient";
 import { auth } from "@clerk/nextjs/server";
 
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();

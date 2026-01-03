@@ -113,7 +113,7 @@ export async function createNewDoctor(data: any) {
     await Promise.all(
       workingDayData?.map((el) =>
         db.workingDays.create({
-          data: { ...el, doctor_id: doctor.id },
+          data: { ...el, doctorId: doctor.id },
         })
       )
     );

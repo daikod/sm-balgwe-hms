@@ -11,39 +11,17 @@ import { auth } from "@clerk/nextjs/server";
 import { Appointment, Doctor, Patient } from "@prisma/client";
 import { format } from "date-fns";
 import { BriefcaseBusiness } from "lucide-react";
-import React, { Suspense} from "react";
+import React, { Suspense } from "react";
 import { Pagination } from "@/components/pagination";
 import { AppointmentContainer } from "@/components/appointment-container";
 
 const columns = [
-  {
-    header: "Info",
-    key: "name",
-  },
-  {
-    header: "Date",
-    key: "appointment_date",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Time",
-    key: "time",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Doctor",
-    key: "doctor",
-    className: "hidden md:table-cell",
-  },
-  {
-    header: "Status",
-    key: "status",
-    className: "hidden xl:table-cell",
-  },
-  {
-    header: "Actions",
-    key: "action",
-  },
+  { header: "Info", key: "name" },
+  { header: "Date", key: "appointment_date", className: "hidden md:table-cell" },
+  { header: "Time", key: "time", className: "hidden md:table-cell" },
+  { header: "Doctor", key: "doctor", className: "hidden md:table-cell" },
+  { header: "Status", key: "status", className: "hidden xl:table-cell" },
+  { header: "Actions", key: "action" },
 ];
 
 interface DataProps extends Appointment {
@@ -51,99 +29,102 @@ interface DataProps extends Appointment {
   doctor: Doctor;
 }
 
-const Appointments = async (props: {
+const Appointments = async ({
+  searchParams,
+}: {
   searchParams?: Promise<{ [key: string]: string | undefined }>;
 }) => {
-    const searchParams = await props.searchParams;
-    const userRole = await getRole();
-    const { userId } = await auth();
-    const isPatient = await checkRole("PATIENT");
+  const resolvedSearchParams = searchParams ? await searchParams : {};
 
-    const page = (searchParams?.p || "1") as string;
-    const searchQuery = searchParams?.q || "";
-    const id = searchParams?.id || undefined;  
-    
-    let queryId = undefined;
+  const userRole = await getRole();
+  const { userId } = await auth();
+  const isPatient = await checkRole("PATIENT");
 
-    if (
-        userRole == "admin" ||
-        (userRole == "doctor" && id) ||
-        (userRole === "nurse" && id)
-    ) {
-        queryId = id;
-    } else if (userRole === "doctor" || userRole === "patient") {
-      queryId = userId;
-     } else if (userRole === "nurse") {
-    queryId = undefined;
-    }
+  const page = (resolvedSearchParams?.p || "1") as string;
+  const searchQuery = resolvedSearchParams?.q || "";
+  const id = resolvedSearchParams?.id || undefined;
 
-   const { data, totalPages, totalRecord, currentPage } =
+  let queryId: string | undefined = undefined;
+
+  if (
+    userRole === "admin" ||
+    ((userRole === "doctor" || userRole === "nurse") && id)
+  ) {
+    queryId = id;
+  } else if (userRole === "doctor" || userRole === "patient") {
+    queryId = userId!;
+  }
+
+  const { data, totalPages, totalRecord, currentPage } =
     await getPatientAppointments({
       page,
       search: searchQuery,
       id: queryId!,
     });
 
-     if (!data) return null;
+  if (!data) return null;
 
-     const renderItem = (item: DataProps) => {
-     const patient_name = `${item?.patient?.first_name} ${item?.patient?.last_name}`;
+  const renderItem = (item: DataProps) => {
+    const patientName = `${item.patient.first_name} ${item.patient.last_name}`;
 
     return (
       <tr
-        key={item?.id}
+        key={item.id}
         className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-slate-50"
       >
         <td className="flex items-center gap-2 md:gap-4 py-2 xl:py-4">
           <ProfileImage
-            url={item?.patient?.img!}
-            name={patient_name}
-            bgColor={item?.patient?.colorCode!}
+            url={item.patient.img!}
+            name={patientName}
+            bgColor={item.patient.colorCode!}
           />
           <div>
-            <h3 className="font-semibold uppercase">{patient_name}</h3>
+            <h3 className="font-semibold uppercase">{patientName}</h3>
             <span className="text-xs md:text-sm capitalize">
-              {item?.patient?.gender
-              ? item.patient.gender.toLowerCase()
-              : "unknown"}
+              {item.patient.gender
+                ? item.patient.gender.toLowerCase()
+                : "unknown"}
             </span>
           </div>
         </td>
 
         <td className="hidden md:table-cell">
-          {format(item?.appointment_date, "yyyy-MM-dd")}
+          {format(item.appointment_date, "yyyy-MM-dd")}
         </td>
+
         <td className="hidden md:table-cell">{item.time}</td>
 
-        <td className="hidden  items-center py-2  md:table-cell">
-          <div className="flex items-center  gap-2 md:gap-4">
+        <td className="hidden md:table-cell">
+          <div className="flex items-center gap-2 md:gap-4">
             <ProfileImage
-              url={item.doctor?.img!}
-              name={item.doctor?.name}
-              bgColor={item?.doctor?.colorCode!}
+              url={item.doctor.img!}
+              name={item.doctor.name}
+              bgColor={item.doctor.colorCode!}
               textClassName="text-black"
             />
-
             <div>
-              <h3 className="font-semibold uppercase">{item.doctor?.name}</h3>
+              <h3 className="font-semibold uppercase">{item.doctor.name}</h3>
               <span className="text-xs md:text-sm capitalize">
-                {item.doctor?.specialization}
+                {item.doctor.specialization}
               </span>
             </div>
           </div>
         </td>
 
         <td className="hidden xl:table-cell">
-          <AppointmentStatusIndicator status={item.status!} />
+          <AppointmentStatusIndicator
+            status={item.status as import("@prisma/client").AppointmentStatus}
+          />
         </td>
+
         <td>
           <div className="flex items-center gap-2">
-            <ViewAppointment id={item?.id.toString()} />
+            <ViewAppointment id={item.id.toString()} />
             <AppointmentActionOptions
               userId={userId!}
-              patientId={item?.patient_id}
-              doctorId={item?.doctor_id}
-              status={item?.status}
+              patientId={item.patientId}
+              doctorId={item.doctorId}
+              status={item.status}
               appointmentId={item.id}
             />
           </div>
@@ -163,22 +144,20 @@ const Appointments = async (props: {
           </span>
         </div>
 
-        <div className="w-full lg:w-fit flex items-center justify-between lg:justify-start gap-2">
+        <div className="w-full lg:w-fit flex items-center gap-2">
           <SearchInput />
-
           {isPatient && (
             <Suspense fallback={<div>Loading...</div>}>
               <AppointmentContainer id={userId!} />
             </Suspense>
-         )}
-          
+          )}
         </div>
       </div>
 
       <div className="mt-6">
         <Table columns={columns} renderRow={renderItem} data={data} />
 
-        {data?.length > 0 && (
+        {data.length > 0 && (
           <Pagination
             totalRecords={totalRecord!}
             currentPage={currentPage!}
@@ -190,6 +169,5 @@ const Appointments = async (props: {
     </div>
   );
 };
-
 
 export default Appointments;

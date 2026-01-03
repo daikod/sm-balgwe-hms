@@ -9,19 +9,22 @@ import { clerkClient } from "@clerk/nextjs/server";
 
 export async function deleteDataById(
   id: string,
-
   deleteType: "doctor" | "staff" | "patient" | "payment" | "bill"
 ) {
   try {
     switch (deleteType) {
       case "doctor":
         await db.doctor.delete({ where: { id: id } });
+        break;
       case "staff":
         await db.staff.delete({ where: { id: id } });
+        break;
       case "patient":
         await db.patient.delete({ where: { id: id } });
+        break;
       case "payment":
         await db.payment.delete({ where: { id: Number(id) } });
+        break;
     }
 
     if (
@@ -53,9 +56,16 @@ export async function createReview(values: ReviewFormValues) {
   try {
     const validatedFields = reviewSchema.parse(values);
 
+    // Ensure 'doctor' and 'patient' are included in the rating data
     await db.rating.create({
       data: {
         ...validatedFields,
+        doctor: {
+          connect: { id: validatedFields.staff_id }, // Assuming staff_id is the doctor ID
+        },
+        patient: {
+          connect: { id: validatedFields.patient_id }, // Assuming patient_id is the patient ID
+        },
       },
     });
 

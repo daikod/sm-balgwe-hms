@@ -1,8 +1,8 @@
-import { PrismaClient} from "@prisma/client";
+// lib/db.ts
+import { PrismaClient } from "@prisma/client";
 
-const prismaClientSingleton = () => {
-  return new PrismaClient();
-};
+// ✅ Singleton pattern for Prisma in dev and prod
+const prismaClientSingleton = () => new PrismaClient();
 
 declare const globalThis: {
   prismaGlobal: ReturnType<typeof prismaClientSingleton>;
@@ -10,6 +10,7 @@ declare const globalThis: {
 
 const db = globalThis.prismaGlobal ?? prismaClientSingleton();
 
-export default db;
-
+// Only persist global Prisma client in development
 if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = db;
+
+export default db;

@@ -2,21 +2,23 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { routeAccess } from "./lib/routes";
 
+type AppRole = "admin" | "doctor" | "nurse" | "patient";
+
 const matchers = Object.keys(routeAccess).map((route) => ({
   matcher: createRouteMatcher([route]),
-  allowedRoles: routeAccess[route] || ["patient"],
+  allowedRoles: routeAccess[route] ?? ["patient"],
 }));
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth();
   const { pathname, origin } = new URL(req.url);
 
-  // Allow unauthenticated access
   if (!userId) return NextResponse.next();
 
-  const role = sessionClaims?.metadata?.role ?? "patient";
+  const role: AppRole =
+    (sessionClaims?.metadata?.role as AppRole) ?? "patient";
 
-  // 🚨 NEVER redirect these routes
+  // Allow onboarding/auth routes
   if (
     pathname.startsWith("/patient/onboarding") ||
     pathname.startsWith("/post-signup") ||
@@ -26,18 +28,29 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next();
   }
 
+  // Root redirect
+  if (pathname === "/") {
+    const redirectMap: Record<AppRole, string> = {
+      patient: "/patient/dashboard",
+      doctor: "/doctor",
+      admin: "/admin/dashboard",
+      nurse: "/nurse",
+    };
+
+    return NextResponse.redirect(new URL(redirectMap[role], origin));
+  }
+
   const matchingRoute = matchers.find(({ matcher }) => matcher(req));
 
   if (matchingRoute && !matchingRoute.allowedRoles.includes(role)) {
-    const redirectMap: Record<string, string> = {
+    const redirectMap: Record<AppRole, string> = {
       patient: "/patient/dashboard",
       doctor: "/doctor",
-      admin: "/admin",
+      admin: "/admin/dashboard",
+      nurse: "/nurse",
     };
 
-    return NextResponse.redirect(
-      new URL(redirectMap[role] ?? "/sign-in", origin)
-    );
+    return NextResponse.redirect(new URL(redirectMap[role], origin));
   }
 
   return NextResponse.next();
@@ -47,5 +60,6 @@ export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|png|svg|ico|woff2?|ttf)).*)",
     "/(api|trpc)(.*)",
+    "/(protected|admin|doctor|patient|nurse)(.*)",
   ],
 };

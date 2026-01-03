@@ -3,12 +3,12 @@ import { redirect } from "next/navigation";
 import db from "@/lib/db";
 import StreamVideoCall from "@/components/StreamVideoCall";
 
-type PageProps = {
+const MeetingPage = async ({
+  params,
+}: {
   params: Promise<{ id: string }>;
-};
-
-const MeetingPage = async ({ params }: PageProps) => {
-  const { id: meetingId } = await params; // ✅ await params
+}) => {
+  const { id: meetingId } = await params;
   const { userId } = await auth();
 
   if (!userId) redirect("/sign-in");
@@ -24,13 +24,13 @@ const MeetingPage = async ({ params }: PageProps) => {
   if (!appointment) redirect("/dashboard");
 
   const isAuthorized =
-    appointment.patient_id === userId ||
-    appointment.doctor_id === userId;
+    appointment.patientId === userId ||
+    appointment.doctorId === userId;
 
   if (!isAuthorized) redirect("/unauthorized");
 
   const userRole =
-    appointment.patient_id === userId ? "patient" : "doctor";
+    appointment.patientId === userId ? "patient" : "doctor";
 
   return (
     <div className="h-screen">

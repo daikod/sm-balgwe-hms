@@ -6,8 +6,8 @@ export type AppointmentType = "PHYSICAL" | "VIDEO";
 export type AppointmentStatus = "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
 interface CreateAppointmentProps {
-  patient_id: string;
-  doctor_id: string;
+  patientId: string;
+  doctorId: string;
   appointment_date: Date;
   time: string;
   duration: number;
@@ -19,8 +19,8 @@ interface CreateAppointmentProps {
    Create Appointment
 ------------------------------- */
 export async function createAppointment({
-  patient_id,
-  doctor_id,
+  patientId,
+  doctorId,
   appointment_date,
   time,
   duration,
@@ -36,8 +36,8 @@ export async function createAppointment({
 
     const appointment = await db.appointment.create({
       data: {
-        patient_id,
-        doctor_id,
+        patientId,
+        doctorId,
         appointment_date,
         time,
         duration,
@@ -105,7 +105,7 @@ const buildQuery = (id?: string, search?: string): Prisma.AppointmentWhereInput 
     : undefined;
 
   const idConditions: Prisma.AppointmentWhereInput | undefined = id
-    ? { OR: [{ patient_id: id }, { doctor_id: id }] }
+    ? { OR: [{ patientId: id }, { doctorId: id }] }
     : undefined;
 
   if (searchConditions && idConditions) return { AND: [searchConditions, idConditions] };
@@ -135,8 +135,8 @@ export async function getPatientAppointments({ page, limit, search, id }: AllApp
         take: LIMIT,
         select: {
           id: true,
-          patient_id: true,
-          doctor_id: true,
+          patientId: true,
+          doctorId: true,
           type: true,
           appointment_date: true,
           time: true,

@@ -1,18 +1,45 @@
+'use client';
+
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { NewPatient } from "@/components/new-patient";
-import { getPatientById } from "@/utils/services/patient";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { completePatientOnboarding } from "./completePatientOnboarding";
 
-const PatientOnboarding = async () => {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+export default function PatientOnboardingPage() {
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
+  const [data, setData] = useState<any>(null);
 
-  const { data } = await getPatientById(userId);
+  useEffect(() => {
+    if (!isLoaded) return;
 
-  // If patient already completed registration → dashboard
-  if (data && data.first_name && data.date_of_birth) {
-    redirect("/patient/dashboard");
-  }
+    if (!user) {
+      router.replace("/sign-in");
+      return;
+    }
+
+    const loadPatient = async () => {
+      try {
+        const res = await fetch(`/api/patient/${user.id}`);
+        const result = await res.json();
+
+        // Already onboarded → go to dashboard
+        if (result?.data?.first_name && result?.data?.date_of_birth) {
+          router.replace("/patient/dashboard");
+          return;
+        }
+
+        setData(result?.data ?? null);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadPatient();
+  }, [isLoaded, user, router]);
+
+  if (!isLoaded) return null;
 
   return (
     <div className="w-full h-full flex justify-center">
@@ -20,10 +47,14 @@ const PatientOnboarding = async () => {
         <NewPatient
           data={data}
           type={data ? "update" : "create"}
+          onComplete={async () => {
+            if (!user) return;
+
+            await completePatientOnboarding(user.id);
+            router.replace("/patient/dashboard");
+          }}
         />
       </div>
     </div>
   );
-};
-
-export default PatientOnboarding;
+}

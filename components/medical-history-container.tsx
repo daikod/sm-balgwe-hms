@@ -9,7 +9,7 @@ interface DataProps {
 
 export const MedicalHistoryContainer = async ({ id, patientId }: DataProps) => {
   const data = await db.medicalRecords.findMany({
-    where: { patient_id: patientId },
+    where: { patientId: patientId },
     include: {
       diagnosis: { include: { doctor: true } },
       lab_test: true,

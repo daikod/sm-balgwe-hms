@@ -1,21 +1,25 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import db from "@/lib/db";
-import { AppointmentStatus } from "@prisma/client";
+import prisma from "@/lib/db";
+import { AppointmentStatus, AppointmentType } from "@prisma/client";
 import { sendVideoCallStartedEmail } from "@/utils/email";
-import prisma from "@/lib/db"
-
 
 export async function POST(req: Request) {
   try {
-    const { userId } = await auth();
+    const { userId, sessionClaims } = await auth();
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const role = (sessionClaims?.publicMetadata as any)?.role;
+    if (role !== "doctor") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { appointmentId } = await req.json();
 
-    const appointment = await db.appointment.findUnique({
+    const appointment = await prisma.appointment.findUnique({
       where: { id: appointmentId },
       include: {
         patient: true,
@@ -23,22 +27,79 @@ export async function POST(req: Request) {
       },
     });
 
-    if (!appointment || appointment.doctor_id !== userId) {
+    if (!appointment || appointment.doctorId !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const roomID = appointment.roomID ?? `appointment-${appointment.id}`;
+    /* --- HARD GUARDS (MANDATORY) --- */
 
-    await db.appointment.update({
-      where: { id: appointmentId },
-      data: {
-        status: AppointmentStatus.IN_PROGRESS,
-        roomID,
-        updated_at: new Date(),
-      },
+    if (appointment.type !== AppointmentType.VIDEO) {
+      return NextResponse.json(
+        { error: "Not a video appointment" },
+        { status: 400 }
+      );
+    }
+
+    if (appointment.status !== AppointmentStatus.SCHEDULED) {
+      return NextResponse.json(
+        { error: `Cannot start appointment in state ${appointment.status}` },
+        { status: 400 }
+      );
+    }
+
+    const roomID =
+      appointment.roomID && appointment.roomID.trim() !== ""
+        ? appointment.roomID
+        : `appointment-${appointment.id}`;
+
+    /* --- TRANSACTION: STATE + NOTIFICATIONS --- */
+    await prisma.$transaction(async (tx) => {
+      await tx.appointment.update({
+        where: { id: appointmentId },
+        data: {
+          status: AppointmentStatus.IN_PROGRESS,
+          roomID,
+        },
+      });
+
+      const existingPatientNotification = await tx.notification.findFirst({
+        where: {
+          userId: appointment.patientId,
+          type: "appointment",
+          relatedId: appointmentId.toString(),
+        },
+      });
+
+      if (!existingPatientNotification) {
+        await tx.notification.create({
+          data: {
+            userId: appointment.patientId,
+            userRole: "PATIENT",
+            title: "Incoming Video Consultation",
+            message: `Dr. ${appointment.doctor?.name} has started a video call`,
+            type: "appointment",
+            priority: "urgent",
+            relatedId: appointmentId.toString(),
+            actionUrl: `/video/${roomID}`,
+          },
+        });
+      }
+
+      await tx.notification.create({
+        data: {
+          userId: appointment.doctorId,
+          userRole: "DOCTOR",
+          title: "Video Consultation Started",
+          message: `Your video consultation with ${appointment.patient.first_name} has started.`,
+          type: "appointment",
+          priority: "normal",
+          relatedId: appointmentId.toString(),
+          actionUrl: `/video/${roomID}`,
+        },
+      });
     });
 
-    // 🔔 Send email to patient
+    /* --- EMAILS (SIDE EFFECTS, SAFE AFTER COMMIT) --- */
     if (appointment.patient?.email) {
       await sendVideoCallStartedEmail({
         to: appointment.patient.email,
@@ -56,30 +117,6 @@ export async function POST(req: Request) {
         roomID,
       });
     }
-
-    await prisma.notification.create({
-      data: {
-        userId: appointment.patient_id,
-        userRole: "PATIENT",
-        title: "Incoming Video Consultation",
-        message: `Dr. ${appointment.doctor?.name} has started a video call`,
-        type: "appointment",
-        priority: "urgent",
-        actionUrl: `/video/${roomID}`,
-      },
-    });
-
-    await prisma.notification.create({
-      data: {
-        userId: appointment.doctor_id,
-        userRole: "DOCTOR",
-        title: "Video Consultation Started",
-        message: `Your video consultation with ${appointment.patient.first_name} has started.`,
-        type: "appointment",
-        priority: "normal",
-        actionUrl: `/video/${roomID}`,
-      },
-    });
 
     return NextResponse.json({ roomID });
   } catch (error) {

@@ -28,7 +28,7 @@ export async function getMedicalRecords({
             last_name: { contains: search, mode: "insensitive" },
           },
         },
-        { patient_id: { contains: search, mode: "insensitive" } },
+        { patientId: { contains: search, mode: "insensitive" } },
       ],
     };
 

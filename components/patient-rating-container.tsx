@@ -9,7 +9,7 @@ export const PatientRatingContainer = async ({ id }: { id?: string }) => {
   const data = await db.rating.findMany({
     take: 10,
 
-    where: { patient_id: id ? id : userId! },
+    where: { patientId: id ? id : userId! },
     include: { patient: { select: { last_name: true, first_name: true } } },
     orderBy: { created_at: "desc" },
   });

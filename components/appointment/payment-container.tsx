@@ -53,7 +53,7 @@ export const PaymentsContainer = async ({
   patientId: string;
 }) => {
   const data = await db.payment.findMany({
-    where: { patient_id: patientId },
+    where: { patientId: patientId },
   });
 
   if (!data) return null;
@@ -83,7 +83,7 @@ export const PaymentsContainer = async ({
         <td className="">
           <div className="flex items-center">
             <ViewAction
-              href={`/record/appointments/${item?.appointment_id}?cat=bills`}
+              href={`/record/appointments/${item?.appointmentId}?cat=bills`}
             />
             {isAdmin && (
               <ActionDialog

@@ -1,50 +1,49 @@
-'use client'
+'use client';
 
-import AppointmentCard from '@/components/AppointmentCard'
-import EmptyAppointmentsClient from './EmptyAppointmentsClient'
-import type { Appointment } from '@/types/appointment'
-import { AppointmentType } from '@prisma/client'
+import AppointmentCard from '@/components/AppointmentCard';
+import EmptyAppointmentsClient from './EmptyAppointmentsClient';
+import type { Appointment } from '@/types/appointment';
 
 interface Props {
-  appointments: Appointment[]
-  userRole: 'PATIENT'
+  appointments: Appointment[];
+  userRole: 'PATIENT';
 }
 
 export default function AppointmentsClient({ appointments, userRole }: Props) {
-  // ✅ Normalize appointments: id as string, type as union
   const normalizedAppointments = appointments
-  .filter((a) => a.status !== 'PENDING')
-  .map((a) => ({
-    ...a,
-    id: String(a.id),
-    type: a.type as 'VIDEO' | 'PHYSICAL',
-    patient: a.patient
-      ? {
-          first_name: a.patient.first_name,
-          last_name: a.patient.last_name,
-          img: a.patient.img ?? undefined,
-        }
-      : undefined,
-    doctor: a.doctor
-      ? {
-          name: a.doctor.name,
-          specialization: a.doctor.specialization,
-          img: a.doctor.img ?? undefined,
-        }
-      : undefined,
-  }))
+    .filter(
+      (a) =>
+        a.status !== 'PENDING' &&
+        a.status !== 'READY_FOR_ADMISSION' &&
+        a.status !== 'MISSED'
+    )
+    .map((a) => ({
+      ...a,
+      id: a.id.toString(), // ✅ SAFE: UI-only transformation
+      type: a.type as 'VIDEO' | 'PHYSICAL',
+      status: a.status as
+        | 'SCHEDULED'
+        | 'IN_PROGRESS'
+        | 'COMPLETED'
+        | 'CANCELLED',
+      patient: a.patient
+        ? {
+            first_name: a.patient.first_name,
+            last_name: a.patient.last_name,
+            img: a.patient.img ?? undefined,
+          }
+        : undefined,
+      doctor: a.doctor
+        ? {
+            name: a.doctor.name,
+            specialization: a.doctor.specialization,
+            img: a.doctor.img ?? undefined,
+          }
+        : undefined,
+    }));
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          My Appointments
-        </h1>
-        <p className="text-gray-600">
-          View and join your scheduled consultations
-        </p>
-      </div>
-
       {normalizedAppointments.length === 0 ? (
         <EmptyAppointmentsClient />
       ) : (
@@ -59,5 +58,5 @@ export default function AppointmentsClient({ appointments, userRole }: Props) {
         </div>
       )}
     </div>
-  )
+  );
 }

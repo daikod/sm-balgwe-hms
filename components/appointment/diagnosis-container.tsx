@@ -22,7 +22,7 @@ export const DiagnosisContainer = async ({
   if (!userId) redirect("/sign-in");
 
   const data = await db.medicalRecords.findFirst({
-    where: { appointment_id: Number(id) },
+    where: { appointmentId: Number(id) },
     include: {
       diagnosis: {
         include: { doctor: true },

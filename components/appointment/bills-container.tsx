@@ -56,7 +56,7 @@ interface ExtendedBillProps extends PatientBills {
 export const BillsContainer = async ({ id }: { id: string }) => {
   const [data, servicesData] = await Promise.all([
     db.payment.findFirst({
-      where: { appointment_id: Number(id) },
+      where: { appointmentId: Number(id) },
       include: {
         bills: {
           include: {

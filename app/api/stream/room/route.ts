@@ -1,38 +1,48 @@
-import { NextResponse } from "next/server"
-import { StreamClient } from "@stream-io/node-sdk"
+import { NextResponse } from "next/server";
+import { StreamClient } from "@stream-io/node-sdk";
+import { adminDoctorNurse } from "@/lib/api-guard";
 
 export async function POST(req: Request) {
+  const { userId, role } = await adminDoctorNurse();
+
   try {
-    const { meetingId, userId, name, image } = await req.json()
+    const { meetingId, userId } = await req.json();
 
     if (!meetingId || !userId) {
-      return NextResponse.json({ error: "Missing meetingId or userId" }, { status: 400 })
+      return NextResponse.json(
+        { error: "Missing meetingId or userId" },
+        { status: 400 }
+      );
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY!
-    const apiSecret = process.env.STREAM_API_SECRET!
+    const apiKey = process.env.NEXT_PUBLIC_STREAM_API_KEY!;
+    const apiSecret = process.env.STREAM_API_SECRET!;
 
-    // Initialize the Stream client
-    const client = new StreamClient(apiKey, apiSecret)
+    const client = new StreamClient(apiKey, apiSecret);
 
-    // Create or get the call
-    const call = client.video.call("default", meetingId)
+    // ✅ Correct call signature: type + id
+    const call = client.video.call("default", meetingId);
+
+    // ✅ members only accept user_id
     await call.getOrCreate({
       data: {
         created_by_id: userId,
-        members: [{ user_id: userId }]
-      }
-    })
+        members: [{ user_id: userId }],
+      },
+    });
 
-    // Generate a token for the user
-    const token = client.generateUserToken({ 
+    // Generate 1-hour user token
+    const token = client.generateUserToken({
       user_id: userId,
-      validity_in_seconds: 3600 // Token valid for 1 hour
-    })
+      validity_in_seconds: 3600,
+    });
 
-    return NextResponse.json({ token })
+    return NextResponse.json({ success: true, createdBy: userId, role, token });
   } catch (error) {
-    console.error("Error creating Stream video room:", error)
-    return NextResponse.json({ error: "Failed to create room or generate token" }, { status: 500 })
+    console.error("Error creating Stream video room:", error);
+    return NextResponse.json(
+      { error: "Failed to create room or generate token" },
+      { status: 500 }
+    );
   }
 }

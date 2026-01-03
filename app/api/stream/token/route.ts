@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { StreamClient } from "@stream-io/node-sdk";
+import { adminDoctorNurse } from "@/lib/api-guard";
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
+  const { userId, role } = await adminDoctorNurse();
+
   try {
     const { userId, name, image } = await req.json();
 
@@ -17,9 +20,13 @@ export async function POST(req: Request) {
       process.env.STREAM_API_SECRET!
     );
 
-    const token = client.createToken(userId);
+    // ✅ Generate token for given user
+    const token = client.generateUserToken({
+      user_id: userId,
+      validity_in_seconds: 3600, // 1 hour
+    });
 
-    return NextResponse.json({ token });
+    return NextResponse.json({ success: true, userId, role, token });
   } catch (error) {
     console.error("Stream token error:", error);
     return NextResponse.json(

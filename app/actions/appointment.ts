@@ -38,8 +38,8 @@ export async function createNewAppointment(data: any) {
     const appointment = await db.appointment.create({
   data: {
     roomID,
-    patient_id: userId,
-    doctor_id: validated.doctor_id,
+    patientId: userId,
+    doctorId: validated.doctor_id,
     appointment_date: appointmentDateTime,
     scheduledAT: appointmentDateTime,
     time: validated.time,
@@ -66,7 +66,7 @@ export async function createNewAppointment(data: any) {
       if (patientExists) {
         await db.notification.create({
           data: {
-            userId: data.patient_id,
+            userId: data.patientId,
             userRole: "PATIENT",
             title: "Appointment Scheduled",
             message: `Your ${
@@ -153,14 +153,14 @@ export async function addVitalSigns(
 
     const validatedData = VitalSignsSchema.parse(data);
 
+    // Ensure we create a medical record if none exists
     let medicalRecord = null;
-
     if (!validatedData.medical_id) {
       medicalRecord = await db.medicalRecords.create({
         data: {
-          patient_id: validatedData.patient_id,
-          appointment_id: Number(appointmentId),
-          doctor_id: doctorId,
+          patientId: validatedData.patient_id, // Prisma expects patientId
+          appointmentId: Number(appointmentId),
+          doctorId: doctorId,
         },
       });
     }
@@ -169,8 +169,16 @@ export async function addVitalSigns(
 
     await db.vitalSigns.create({
       data: {
-        ...validatedData,
-        medical_id: Number(med_id!),
+        patientId: validatedData.patient_id, // <-- map correctly
+        medicalId: Number(med_id!),          // <-- already mapped
+        body_temperature: validatedData.body_temperature,
+        heartRate: validatedData.heartRate,
+        systolic: validatedData.systolic,
+        diastolic: validatedData.diastolic,
+        weight: validatedData.weight,
+        height: validatedData.height,
+        respiratory_rate: validatedData.respiratory_rate,
+        oxygen_saturation: validatedData.oxygen_saturation,
       },
     });
 

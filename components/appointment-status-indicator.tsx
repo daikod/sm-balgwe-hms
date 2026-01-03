@@ -1,28 +1,49 @@
-import { cn } from "@/lib/utils";
+import { AppointmentStatus } from "@prisma/client";
 
-type AppointmentStatus = "PENDING" | "SCHEDULED" | "CANCELLED" | "COMPLETED" | "IN_PROGRESS";
-
-const status_color: Record<AppointmentStatus, string> = {
-  PENDING: "bg-yellow-600/15 text-yellow-600",
-  SCHEDULED: "bg-emerald-600/15 text-emerald-600",
-  CANCELLED: "bg-red-600/15 text-red-600",
-  COMPLETED: "bg-blue-600/15 text-blue-600",
-  IN_PROGRESS: "bg-green-500/15 text-purple-600",
-};
-
-export const AppointmentStatusIndicator = ({
-  status,
-}: {
+interface Props {
   status: AppointmentStatus;
-}) => {
+}
+
+export const AppointmentStatusIndicator = ({ status }: Props) => {
+  const statusMap: Record<AppointmentStatus, { label: string; color: string }> =
+    {
+      PENDING: {
+        label: "Pending",
+        color: "bg-yellow-100 text-yellow-800",
+      },
+      SCHEDULED: {
+        label: "Scheduled",
+        color: "bg-blue-100 text-blue-800",
+      },
+      IN_PROGRESS: {
+        label: "In Progress",
+        color: "bg-indigo-100 text-indigo-800",
+      },
+      COMPLETED: {
+        label: "Completed",
+        color: "bg-green-100 text-green-800",
+      },
+      CANCELLED: {
+        label: "Cancelled",
+        color: "bg-red-100 text-red-800",
+      },
+      READY_FOR_ADMISSION: {
+        label: "Ready for Admission",
+        color: "bg-purple-100 text-purple-800",
+      },
+      MISSED: {
+        label: "Missed Recent Appointment",
+        color: "bg-red-600 text-white-600",
+      }
+    };
+
+  const config = statusMap[status];
+
   return (
-    <p
-      className={cn(
-        "w-fit px-2 py-1 rounded-full capitalize text-xs lg:text-sm",
-        status_color[status]
-      )}
+    <span
+      className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}
     >
-      {status}
-    </p>
+      {config.label}
+    </span>
   );
 };

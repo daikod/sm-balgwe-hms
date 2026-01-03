@@ -9,13 +9,13 @@ import Link from "next/link";
 import React from "react";
 import { notFound } from "next/navigation";
 
-interface ParamsProps {
+interface PageProps {
   params: Promise<{ patientId: string }>;
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const PatientProfile = async ({ params, searchParams }: ParamsProps) => {
-  // Await both params and searchParams
+const PatientProfile = async ({ params, searchParams }: PageProps) => {
+  // ✅ REQUIRED in Next.js 15
   const { patientId } = await params;
   const search = searchParams ? await searchParams : {};
 
@@ -44,7 +44,6 @@ const PatientProfile = async ({ params, searchParams }: ParamsProps) => {
   return (
     <div className="bg-gray-100/60 h-full rounded-xl py-6 px-3 2xl:p-6 flex flex-col lg:flex-row gap-6">
       <div className="w-full xl:w-3/4">
-        {/* Profile Cards */}
         <div className="w-full flex flex-col lg:flex-row gap-4">
           <Card className="bg-white rounded-xl p-4 w-full lg:w-[30%] border-none flex flex-col items-center">
             <ProfileImage
@@ -72,7 +71,11 @@ const PatientProfile = async ({ params, searchParams }: ParamsProps) => {
               <SmallCard label="Gender" value={data?.gender?.toLowerCase()!} />
               <SmallCard
                 label="Date of Birth"
-                value={data?.date_of_birth ? format(new Date(data.date_of_birth), "yyyy-MM-dd") : "—"}
+                value={
+                  data?.date_of_birth
+                    ? format(new Date(data.date_of_birth), "yyyy-MM-dd")
+                    : "—"
+                }
               />
               <SmallCard label="Phone Number" value={data?.phone!} />
             </div>
@@ -86,13 +89,21 @@ const PatientProfile = async ({ params, searchParams }: ParamsProps) => {
               <SmallCard label="Emergency Contact" value={data?.emergency_contact_number!} />
               <SmallCard
                 label="Last Visit"
-                value={data?.lastVisit ? format(data?.lastVisit!, "yyyy-MM-dd") : "No last visit"}
+                value={
+                  data?.lastVisit
+                    ? format(data.lastVisit, "yyyy-MM-dd")
+                    : "No last visit"
+                }
               />
             </div>
           </Card>
         </div>
 
-        <div className="mt-10">{cat === "medical-history" && <MedicalHistoryContainer patientId={id} />}</div>
+        <div className="mt-10">
+          {cat === "medical-history" && (
+            <MedicalHistoryContainer patientId={id} />
+          )}
+        </div>
       </div>
 
       <div className="w-full xl:w-1/3">
@@ -106,17 +117,17 @@ const PatientProfile = async ({ params, searchParams }: ParamsProps) => {
             <Link className="p-3 rounded-md bg-purple-50 hover:underline" href="?cat=medical-history">
               Medical Records
             </Link>
-            <Link className="p-3 rounded-md bg-violet-100" href={`?cat=payments`}>
+            <Link className="p-3 rounded-md bg-violet-100" href="?cat=payments">
               Medical Bills
             </Link>
-            <Link className="p-3 rounded-md bg-pink-50" href={`/`}>
+            <Link className="p-3 rounded-md bg-pink-50 hover:underline" href="/">
               Dashboard
             </Link>
-            <Link className="p-3 rounded-md bg-rose-100" href={`#`}>
+            <Link className="p-3 rounded-md bg-rose-100" href="#">
               Lab Test & Result
             </Link>
             {id === (await auth()).userId && (
-              <Link className="p-3 rounded-md bg-black/10" href={`/patient/registration`}>
+              <Link className="p-3 rounded-md bg-black/10" href="/patient/registration">
                 Edit Information
               </Link>
             )}

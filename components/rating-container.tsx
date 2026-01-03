@@ -1,10 +1,8 @@
 import db from '@/lib/db';
 
-
-
 export const RatingContainer = async ({ id }: { id: string }) => {
   const ratings = await db.rating.findMany({
-    where: { staff_id: id }, // match your model's field
+    where: { doctorId: id }, // match your model's field
     orderBy: { created_at: "desc" },
   });
 

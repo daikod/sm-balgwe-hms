@@ -10,7 +10,7 @@ interface CardProps {
   title: string;
   icon: LucideIcon;
   note?: string;
-  value: number;
+  value?: number;
   className?: string;
   iconClassName?: string;
   link?: string; // made optional
@@ -53,7 +53,7 @@ export const StatCard = ({
           >
             <CardIcon icon={icon} />
           </div>
-          <h2 className="text-2xl 2xl:text-3xl font-semibold">{formatNumber(value)}</h2>
+          <h2 className="text-2xl 2xl:text-3xl font-semibold">{value !== undefined ? formatNumber(value) : "-"}</h2>
         </div>
       </CardContent>
 

@@ -16,7 +16,7 @@ import { format } from "date-fns";
 import { AppointmentStatusIndicator } from "./appointment-status-indicator";
 import { checkRole } from "@/utils/roles";
 import { auth } from "@clerk/nextjs/server";
-import { AppointmentAction } from "@/components/appointment-action";
+import { AppointmentAction, AppointmentStatusEnum } from "@/components/appointment-action";
 
 export const ViewAppointment = async ({ id }: { id: string | undefined }) => {
   const { data } = await getAppointmentById(Number(id!));
@@ -26,6 +26,9 @@ export const ViewAppointment = async ({ id }: { id: string | undefined }) => {
 
   const patient = data?.patient ?? { first_name: "", last_name: "", img: "", email: "" };
   const doctor = data?.doctor ?? { name: "", specialization: "", img: "" };
+
+  // ✅ Cast data.status to AppointmentStatusEnum safely
+  const statusEnum: AppointmentStatusEnum = AppointmentStatusEnum[data.status as keyof typeof AppointmentStatusEnum];
 
   return (
     <Dialog>
@@ -69,17 +72,14 @@ export const ViewAppointment = async ({ id }: { id: string | undefined }) => {
                   className="size-20 bg-blue-500"
                   textClassName="text-2xl"
                 />
-
                 <div className="space-y-0.5">
                   <h2 className="text-lg md:text-xl font-semibold uppercase">
                     {patient.first_name} {patient.last_name}
                   </h2>
-
                   <p className="flex items-center gap-2 text-gray-600">
                     <Calendar size={20} className="text-gray-500" />
                     N/A
                   </p>
-
                   <span className="flex items-center text-sm gap-2">
                     <Phone size={16} className="text-gray-500" />
                     N/A
@@ -110,7 +110,7 @@ export const ViewAppointment = async ({ id }: { id: string | undefined }) => {
               </div>
               <div>
                 <span className="text-sm text-gray-500">Status</span>
-                <AppointmentStatusIndicator status={data?.status} />
+                <AppointmentStatusIndicator status={data?.status as AppointmentStatusEnum} />
               </div>
             </div>
 
@@ -141,12 +141,12 @@ export const ViewAppointment = async ({ id }: { id: string | undefined }) => {
               </div>
             </div>
 
-            {((await checkRole("ADMIN")) || data?.doctor_id === userId) && (
+            {((await checkRole("ADMIN")) || data?.doctorId === userId) && (
               <>
                 <p className="w-fit bg-blue-100 text-blue-600 py-1 px-2 rounded text-xs md:text-sm mt-4">
                   Perform Action
                 </p>
-                <AppointmentAction id={data.id} status={data?.status} />
+                <AppointmentAction id={data.id} status={statusEnum} />
               </>
             )}
           </div>

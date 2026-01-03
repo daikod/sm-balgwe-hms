@@ -18,9 +18,10 @@ import { toast } from "sonner";
 interface DataProps {
   data?: Patient | null;
   type: "create" | "update";
+  onComplete?: () => Promise<void>; // ✅ Added
 }
 
-export const NewPatient = ({ data, type }: DataProps) => {
+export const NewPatient = ({ data, type, onComplete }: DataProps) => {
   const { user } = useUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -67,7 +68,10 @@ export const NewPatient = ({ data, type }: DataProps) => {
       if (!result.success) throw new Error(result.message);
 
       toast.success("Patient registered successfully");
-      router.push("/patient/dashboard");
+
+      // ✅ Call onComplete if provided
+      if (onComplete) await onComplete();
+      else router.push("/patient/dashboard");
     } catch (err: any) {
       console.error(err);
       toast.error("Failed to submit patient data");
@@ -77,46 +81,45 @@ export const NewPatient = ({ data, type }: DataProps) => {
   };
 
   useEffect(() => {
-  if (type === "update" && data) {
-    form.reset({
-      first_name: data.first_name || "",
-      last_name: data.last_name || "",
-      email: data.email || "",
-      phone: data.phone || "",
-      date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : new Date(),
-      gender: data.gender === "FEMALE" ? "FEMALE" : "MALE", // ensure type matches union
-      marital_status:
-        data.marital_status === "married" ||
-        data.marital_status === "divorced" ||
-        data.marital_status === "widowed" ||
-        data.marital_status === "separated"
-          ? data.marital_status
-          : "single", // default to "single" if unknown
-      address: data.address || "",
-      emergency_contact_name: data.emergency_contact_name || "",
-      emergency_contact_number: data.emergency_contact_number || "",
-      relation:
-        data.relation === "father" ||
-        data.relation === "husband" ||
-        data.relation === "wife" ||
-        data.relation === "other"
-          ? data.relation
-          : "mother",
-      blood_group: data.blood_group || "",
-      allergies: data.allergies || "",
-      medical_conditions: data.medical_conditions || "",
-      medical_history: data.medical_history || "",
-      insurance_number: data.insurance_number || "",
-      insurance_provider: data.insurance_provider || "",
-      privacy_consent: data.privacy_consent || false,
-      service_consent: data.service_consent || false,
-      medical_consent: data.medical_consent || false,
-    });
-  } else if (type === "create") {
-    form.reset(defaultValues);
-  }
-}, [data, type]);
-
+    if (type === "update" && data) {
+      form.reset({
+        first_name: data.first_name || "",
+        last_name: data.last_name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        date_of_birth: data.date_of_birth ? new Date(data.date_of_birth) : new Date(),
+        gender: data.gender === "FEMALE" ? "FEMALE" : "MALE",
+        marital_status:
+          data.marital_status === "married" ||
+          data.marital_status === "divorced" ||
+          data.marital_status === "widowed" ||
+          data.marital_status === "separated"
+            ? data.marital_status
+            : "single",
+        address: data.address || "",
+        emergency_contact_name: data.emergency_contact_name || "",
+        emergency_contact_number: data.emergency_contact_number || "",
+        relation:
+          data.relation === "father" ||
+          data.relation === "husband" ||
+          data.relation === "wife" ||
+          data.relation === "other"
+            ? data.relation
+            : "mother",
+        blood_group: data.blood_group || "",
+        allergies: data.allergies || "",
+        medical_conditions: data.medical_conditions || "",
+        medical_history: data.medical_history || "",
+        insurance_number: data.insurance_number || "",
+        insurance_provider: data.insurance_provider || "",
+        privacy_consent: data.privacy_consent || false,
+        service_consent: data.service_consent || false,
+        medical_consent: data.medical_consent || false,
+      });
+    } else if (type === "create") {
+      form.reset(defaultValues);
+    }
+  }, [data, type]);
 
   return (
     <Card className="max-w-6xl w-full p-4">

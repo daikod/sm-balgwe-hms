@@ -12,9 +12,9 @@ export default async function PatientAppointmentsPage() {
 
   const appointments = await db.appointment.findMany({
     where: {
-      patient_id: userId,
+      patientId: userId,
       status: {
-        in: ["SCHEDULED", "IN_PROGRESS"],
+        in: ["PENDING", "READY_FOR_ADMISSION", "MISSED"],
       },
     },
     include: {
@@ -26,9 +26,27 @@ export default async function PatientAppointmentsPage() {
     },
   });
 
+  // ✅ ONLY normalize null → undefined (do NOT change id type)
+  const safeAppointments = appointments.map((a) => ({
+    ...a,
+    patient: a.patient
+      ? {
+          ...a.patient,
+          doctorId: a.patient.doctorId ?? undefined,
+          img: a.patient.img ?? undefined,
+        }
+      : undefined,
+    doctor: a.doctor
+      ? {
+          ...a.doctor,
+          img: a.doctor.img ?? undefined,
+        }
+      : undefined,
+  }));
+
   return (
     <AppointmentsClient
-      appointments={appointments}
+      appointments={safeAppointments}
       userRole="PATIENT"
     />
   );

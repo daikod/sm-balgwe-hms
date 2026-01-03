@@ -7,7 +7,7 @@ export const getVitalSignData = async (id: string) => {
 
   const data = await db.vitalSigns.findMany({
     where: {
-      patient_id: id,
+      patientId: id,
       created_at: {
         gte: sevenDaysAgo,
       },
